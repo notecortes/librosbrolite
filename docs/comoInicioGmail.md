@@ -1,17 +1,3 @@
-Searched for "google"
-Searched for "google"
-Viewed configuracion.php:160-198
-Viewed router.php:1495-1525
-Viewed login.php:50-84
-Searched for "/privacidad"
-Viewed router.php:270-380
-Searched for "function google_generar_url_auth"
-Viewed auth_google.php:1-132
-Searched for "google_client_id"
-Viewed 02_seed.sql:68-75
-Searched for "function config_cargar"
-Viewed centro.php:9-35
-
 ¡Buenas noticias! En **LibrosBro el código ya está 100% implementado** y preparado en PHP puro (usando cURL nativo, sin librerías externas).
 
 Cuenta con el flujo OAuth 2.0 completo:
