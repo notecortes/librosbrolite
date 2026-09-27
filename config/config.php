@@ -6,14 +6,22 @@
  */
 declare(strict_types=1);
 
-define('APP_ENV',      getenv('APP_ENV')      ?: 'development');
+/**define('APP_ENV',      getenv('APP_ENV')      ?: 'development');
 define('DB_HOST',      getenv('DB_HOST')      ?: 'db');
 define('DB_NAME',      getenv('DB_NAME')      ?: 'bookswap');
 define('DB_USER',      getenv('DB_USER')      ?: 'bookswap');
 define('DB_PASS',      getenv('DB_PASS')      ?: 'bookswap_pass');
 define('DB_ROOT_PASS', getenv('DB_ROOT_PASS') ?: 'root_secret_dev'); // SOLO tests
 define('MAIL_FROM',    getenv('MAIL_FROM')    ?: 'no-reply@bookswap.local');
+*/
 
+define('APP_ENV',      getenv('APP_ENV')      ?: 'production');
+define('DB_HOST',      getenv('DB_HOST')      ?: 'localhost');
+define('DB_NAME',      getenv('DB_NAME')      ?: 'librosbr_books');
+define('DB_USER',      getenv('DB_USER')      ?: 'librosbr_books');
+define('DB_PASS',      getenv('DB_PASS')      ?: 'pxtdOIm8vboEsg');
+define('DB_ROOT_PASS', getenv('DB_ROOT_PASS') ?: 'root_secret_dev'); // SOLO tests
+define('MAIL_FROM',    getenv('MAIL_FROM')    ?: 'notecortesprofe@gmail.com');
 date_default_timezone_set('Europe/Madrid');
 
 // Control de exposición de errores según entorno

@@ -23,7 +23,12 @@ $costeLibro = (int) ($config['coste_libro'] ?? 1);
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
   <div>
     <h1 class="h2 fw-800 mb-1">¡Hola, <?= e($usuario['nombre']) ?>! 👋</h1>
-    <p class="text-muted mb-0">Bienvenido a tu espacio personal en <?= e($config['centro_nombre'] ?? 'BookSwap') ?>.</p>
+    <p class="text-muted mb-0">Bienvenido a tu espacio personal en <?= e($config['centro_nombre'] ?? 'LibrosBro') ?>.</p>
+  </div>
+  <div>
+    <a href="/cambiar-password" class="btn btn-outline-secondary btn-sm rounded-pill fw-semibold shadow-xs">
+      <i class="bi bi-key me-1 text-primary"></i>Cambiar contraseña
+    </a>
   </div>
 </div>
 

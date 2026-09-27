@@ -20,7 +20,7 @@ declare(strict_types=1);
             <i class="bi bi-shield-lock-fill fs-3"></i>
           </div>
           <h1 class="h3 fw-800 mb-1">Nueva contraseña</h1>
-          <p class="text-muted small">Crea una nueva contraseña segura para acceder a BookSwap.</p>
+          <p class="text-muted small">Crea una nueva contraseña segura para acceder a LibrosBro.</p>
         </div>
 
         <?php if (!empty($error)): ?>

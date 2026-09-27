@@ -20,7 +20,7 @@ $config = $config ?? [];
       <h1 class="h3 fw-bold mb-1">
         <i class="bi bi-sliders text-primary me-2"></i>Configuración del Sistema
       </h1>
-      <p class="text-muted small mb-0">Ajusta los parámetros operativos, económicos y de contacto de BookSwap.</p>
+      <p class="text-muted small mb-0">Ajusta los parámetros operativos, económicos y de contacto de LibrosBro.</p>
     </div>
     <a href="/admin" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left me-1"></i>Volver al Panel
@@ -109,7 +109,7 @@ $config = $config ?? [];
           <div class="card-body p-4">
             <div class="mb-3">
               <label class="form-label fw-bold small">Nombre del centro:</label>
-              <input type="text" name="centro_nombre" class="form-control" value="<?= e($config['centro_nombre'] ?? 'BookSwap — Biblioteca Ciudadana') ?>" required>
+              <input type="text" name="centro_nombre" class="form-control" value="<?= e($config['centro_nombre'] ?? 'LibrosBro — Biblioteca Ciudadana') ?>" required>
             </div>
 
             <div class="mb-3">

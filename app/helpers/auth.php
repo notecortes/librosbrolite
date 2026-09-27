@@ -260,6 +260,86 @@ function auth_registrar_usuario(string $nombre, string $email, string $password)
 }
 
 /**
+ * Cambia la contraseña de un usuario autenticado tras verificar su contraseña actual.
+ *
+ * @param PDO $pdo Conexión a base de datos
+ * @param int $usuarioId ID del usuario autenticado
+ * @param string $passwordActual Contraseña actual introducida
+ * @param string $passwordNueva Nueva contraseña deseada
+ * @param string $passwordConfirm Confirmación de la nueva contraseña
+ * @return array ['ok' => bool, 'error' => ?string]
+ */
+function auth_cambiar_password_usuario(
+    PDO $pdo,
+    int $usuarioId,
+    string $passwordActual,
+    string $passwordNueva,
+    string $passwordConfirm
+): array {
+    $stmt = $pdo->prepare('SELECT id, email, password_hash, auth_provider FROM usuarios WHERE id = ? LIMIT 1');
+    $stmt->execute([$usuarioId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Usuario no encontrado.'];
+    }
+
+    // 1. Si la cuenta ya tiene password_hash, verificar contraseña actual
+    if (!empty($user['password_hash'])) {
+        if ($passwordActual === '') {
+            return ['ok' => false, 'error' => 'Debes introducir tu contraseña actual.'];
+        }
+        if (!password_verify($passwordActual, $user['password_hash'])) {
+            return ['ok' => false, 'error' => 'La contraseña actual no es correcta.'];
+        }
+    }
+
+    // 2. Validar longitud de la nueva contraseña (mínimo 6 caracteres)
+    if (mb_strlen($passwordNueva) < 6) {
+        return ['ok' => false, 'error' => 'La nueva contraseña debe tener al menos 6 caracteres.'];
+    }
+
+    // 3. Validar coincidencia
+    if ($passwordNueva !== $passwordConfirm) {
+        return ['ok' => false, 'error' => 'La nueva contraseña y su confirmación no coinciden.'];
+    }
+
+    // 4. Si la nueva contraseña es igual a la actual
+    if (!empty($user['password_hash']) && password_verify($passwordNueva, $user['password_hash'])) {
+        return ['ok' => false, 'error' => 'La nueva contraseña debe ser distinta a la contraseña actual.'];
+    }
+
+    try {
+        $nuevoHash = password_hash($passwordNueva, PASSWORD_BCRYPT, ['cost' => 10]);
+        $nuevoProvider = ($user['auth_provider'] === 'google') ? 'ambos' : $user['auth_provider'];
+
+        $stmtUpd = $pdo->prepare('UPDATE usuarios SET password_hash = ?, auth_provider = ? WHERE id = ?');
+        $stmtUpd->execute([$nuevoHash, $nuevoProvider, $usuarioId]);
+
+        // Invalidar tokens previos de recuperación que estuvieran pendientes
+        $stmtPr = $pdo->prepare('UPDATE password_resets SET usado = 1 WHERE usuario_id = ?');
+        $stmtPr->execute([$usuarioId]);
+
+        // Registrar en auditoría
+        if (function_exists('log_accion')) {
+            log_accion($usuarioId, 'password_cambiada_usuario', 'usuarios', $usuarioId, [
+                'email' => $user['email'],
+            ]);
+        }
+
+        // Actualizar persistencia si existe el helper
+        if (function_exists('usuarios_persistir_personalizados')) {
+            usuarios_persistir_personalizados($pdo);
+        }
+
+        return ['ok' => true, 'error' => null];
+    } catch (Throwable $e) {
+        error_log('Error en auth_cambiar_password_usuario: ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Ocurrió un error al actualizar la contraseña. Inténtalo de nuevo.'];
+    }
+}
+
+/**
  * Comprueba si el usuario autenticado tiene asignado un permiso específico en el sistema.
  *
  * @param array|null $usuario Datos del usuario

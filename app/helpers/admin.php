@@ -241,6 +241,120 @@ function admin_usuario_reset_password(PDO $pdo, int $usuarioId, ?int $adminId = 
     return admin_usuario_generar_enlace_reset($pdo, $usuarioId, $adminId);
 }
 
+/**
+ * Elimina permanentemente la cuenta de un usuario y todo su historial asociado (tokens, reservas, transacciones, etc.).
+ * Permite que el usuario pueda volver a registrarse con el mismo correo electrónico sin conflictos.
+ *
+ * @param PDO $pdo Conexión a base de datos
+ * @param int $usuarioId ID del usuario a eliminar
+ * @param int|null $adminId Administrador que ejecuta la eliminación
+ * @return array ['ok' => bool, 'id' => int, 'nombre' => string, 'email' => string]
+ * @throws Exception Si el usuario no existe, es superadmin (id=1) o es el propio admin autenticado
+ */
+function admin_usuario_eliminar(PDO $pdo, int $usuarioId, ?int $adminId = null): array {
+    $stmt = $pdo->prepare('SELECT id, nombre, email, rol_id FROM usuarios WHERE id = ?');
+    $stmt->execute([$usuarioId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        throw new Exception('El usuario que intentas eliminar no existe.');
+    }
+
+    if ($usuarioId === 1) {
+        throw new Exception('No se puede eliminar la cuenta principal de administración del sistema.');
+    }
+
+    if ($adminId !== null && $adminId === $usuarioId) {
+        throw new Exception('No puedes eliminar tu propia cuenta de administrador.');
+    }
+
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        // 1. Liberar copias asociadas a reservas activas de este usuario
+        $stmtLib = $pdo->prepare("
+            UPDATE ejemplares 
+            SET estado = 'disponible'
+            WHERE id IN (
+                SELECT ejemplar_id FROM transacciones WHERE usuario_id = ? AND estado = 'activa'
+            )
+        ");
+        $stmtLib->execute([$usuarioId]);
+
+        // 2. Desvincular ejemplares depositados por este usuario (el fondo físico permanece en la biblioteca)
+        $stmtDep = $pdo->prepare("UPDATE ejemplares SET depositante_id = NULL WHERE depositante_id = ?");
+        $stmtDep->execute([$usuarioId]);
+
+        // 3. Desvincular transacciones que haya gestionado como personal/admin
+        $stmtGest = $pdo->prepare("UPDATE transacciones SET gestionada_por = NULL WHERE gestionada_por = ?");
+        $stmtGest->execute([$usuarioId]);
+
+        // 4. Eliminar movimientos del ledger de tokens de este usuario
+        $stmtMov = $pdo->prepare("DELETE FROM movimientos_tokens WHERE usuario_id = ?");
+        $stmtMov->execute([$usuarioId]);
+
+        // 5. Eliminar transacciones (depósitos, reservas, entregas) de este usuario
+        $stmtTr = $pdo->prepare("DELETE FROM transacciones WHERE usuario_id = ?");
+        $stmtTr->execute([$usuarioId]);
+
+        // 6. Eliminar elementos de su lista de deseos
+        $stmtW = $pdo->prepare("DELETE FROM wishlist WHERE usuario_id = ?");
+        $stmtW->execute([$usuarioId]);
+
+        // 7. Eliminar notificaciones recibidas
+        $stmtNot = $pdo->prepare("DELETE FROM notificaciones WHERE usuario_id = ?");
+        $stmtNot->execute([$usuarioId]);
+
+        // 8. Eliminar tokens de restablecimiento de contraseña
+        $stmtPr = $pdo->prepare("DELETE FROM password_resets WHERE usuario_id = ?");
+        $stmtPr->execute([$usuarioId]);
+
+        // 9. Limpiar intentos de login y rate limits para que pueda registrarse de inmediato
+        $emailNorm = strtolower(trim((string) $user['email']));
+        $stmtInt = $pdo->prepare("DELETE FROM intentos_login WHERE email = ? OR email = ?");
+        $stmtInt->execute([$emailNorm, 'reset:' . $emailNorm]);
+
+        // 10. Desvincular copias de seguridad
+        $stmtBak = $pdo->prepare("UPDATE backups SET usuario_id = NULL WHERE usuario_id = ?");
+        $stmtBak->execute([$usuarioId]);
+
+        // 11. Auditoría del borrado de cuenta
+        auditoria_registrar($pdo, 'usuario.eliminar', 'usuarios', $usuarioId, [
+            'nombre' => $user['nombre'],
+            'email'  => $user['email'],
+            'rol_id' => $user['rol_id'],
+        ], $adminId);
+
+        // 12. Borrar permanentemente el registro en la tabla de usuarios
+        $stmtDel = $pdo->prepare("DELETE FROM usuarios WHERE id = ?");
+        $stmtDel->execute([$usuarioId]);
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        // 13. Eliminar de la persistencia de cuentas personalizadas
+        if (function_exists('usuarios_eliminar_de_persistencia')) {
+            usuarios_eliminar_de_persistencia($user['email']);
+        }
+
+        return [
+            'ok'     => true,
+            'id'     => $usuarioId,
+            'nombre' => $user['nombre'],
+            'email'  => $user['email'],
+        ];
+    } catch (Throwable $e) {
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+
 
 
 /**

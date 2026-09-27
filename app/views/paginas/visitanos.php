@@ -13,7 +13,7 @@
 declare(strict_types=1);
 
 $config = $config ?? [];
-$nombreCentro    = (string) ($config['centro_nombre'] ?? 'BookSwap — Biblioteca Ciudadana');
+$nombreCentro    = (string) ($config['centro_nombre'] ?? 'LibrosBro — Biblioteca Ciudadana');
 $direccionCentro = (string) ($config['centro_direccion'] ?? 'Calle de los Libros 42, 28004 Madrid');
 $telefonoCentro  = (string) ($config['centro_telefono'] ?? '+34 910 123 456');
 $emailCentro     = (string) ($config['centro_email'] ?? 'hola@bookswap.local');

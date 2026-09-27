@@ -71,9 +71,9 @@ El acceso se realiza mediante correo electrónico y contraseña o mediante auten
 
 ---
 
-## 🔑 Recuperación y Restablecimiento de Contraseñas (v4.7)
+## 🔑 Recuperación, Enlaces de Acceso y Gestión de Cuentas (v4.7)
 
-BookSwap ofrece una doble vía adaptada al contexto físico de centros educativos y bibliotecas ciudadanas:
+LibrosBro ofrece un flujo integral adaptado tanto al autoservicio como a la atención presencial de centros educativos y bibliotecas:
 
 1. **Autoservicio por Correo Electrónico (`/olvidar` y `/reset/{token}`):**
    - El usuario introduce su correo electrónico registrado.
@@ -85,12 +85,18 @@ BookSwap ofrece una doble vía adaptada al contexto físico de centros educativo
    - **Cuentas vinculadas a Google:** si se solicita recuperación para un usuario cuya cuenta utiliza Google OAuth (`password_hash` es `NULL`), no se crea ningún token en base de datos y se remite un correo explicativo indicando que debe iniciar sesión mediante el botón de Google.
    - **Degradación controlada en desarrollo:** en entornos locales o de pruebas (`APP_ENV=development` o Docker sin MTA configurado), el enlace directo se muestra en pantalla para permitir la verificación sin depender de un servidor de correo. En producción este aviso nunca se muestra.
 
-2. **Generación Manual por Administrador (`/admin/usuarios`):**
-   - Pensada para el contexto presencial de centros educativos y bibliotecas comunitarias cuando el alumno o lector no tiene acceso a su correo.
-   - El administrador (con permiso `usuarios.gestionar`) puede pulsar **"🔑 Generar enlace de acceso"** en la fila del usuario.
-   - Para cuentas asociadas a Google el botón no aparece.
-   - Genera el token con hash SHA-256 y auditoría (`password_reset_enlace`) y lo muestra una sola vez en un modal o alerta con botón para copiar al portapapeles.
-   - El administrador entrega el enlace en persona al usuario para que establezca su nueva contraseña.
+2. **Generación Manual con Código QR In Situ (`/admin/usuarios`):**
+   - Pensada para el mostrador presencial cuando el alumno o lector está presente y no tiene acceso a su correo en ese momento.
+   - El administrador (con permiso `usuarios.gestionar`) pulsa **"🔑 Generar enlace de acceso"** en la fila del usuario.
+   - Se despliega en pantalla un **código QR de alta definición** generado en el cliente (`qrcode.min.js`, 100% offline y privado).
+   - El usuario enfoca con la cámara de su móvil y accede de inmediato para establecer su nueva contraseña in situ.
+   - Incluye botón **«Ampliar QR»** para pantallas lejanas o mamparas de mostrador y botón **«Imprimir Pase»** para generar un comprobante impreso temporal.
+
+3. **Eliminación Definitiva de Cuenta e Historial (`/admin/usuarios`):**
+   - Permite al Administrador borrar por completo una cuenta de usuario a petición del interesado o por gestión administrativa.
+   - **Purga total de historial:** en una única transacción atómica se liberan sus reservas activas (los ejemplares regresan a estado `disponible`), se borran sus movimientos en el ledger de tokens (`movimientos_tokens`), todas sus transacciones (`transacciones`), su lista de deseos (`wishlist`), sus notificaciones (`notificaciones`), tokens de reseteo (`password_resets`) y sus registros de rate-limit (`intentos_login`). Si aportó libros físicos a la biblioteca, los ejemplares permanecen en el fondo general sin depositante asociado.
+   - **Liberación inmediata del correo:** al eliminarse la cuenta por completo, el correo electrónico queda 100% libre para que la persona pueda volver a registrarse desde cero en cualquier momento si lo desea.
+   - **Seguridad y auditoría:** no permite el auto-borrado del administrador con sesión activa ni el borrado del superadministrador principal (`id=1`). La acción queda registrada en `registro_auditoria` (`usuario.eliminar`).
 
 ---
 

@@ -63,7 +63,7 @@ $config = $config ?? [];
           Sube un archivo de copia de seguridad <code>.sql</code> previamente descargado para sobrescribir los datos actuales.
         </p>
 
-        <form method="POST" action="/admin/backups/restaurar" enctype="multipart/form-data" onsubmit="return confirm('¡ATENCIÓN! La restauración reemplazará todas las tablas y datos actuales de BookSwap con los del archivo seleccionado. ¿Deseas continuar?');">
+        <form method="POST" action="/admin/backups/restaurar" enctype="multipart/form-data" onsubmit="return confirm('¡ATENCIÓN! La restauración reemplazará todas las tablas y datos actuales de LibrosBro con los del archivo seleccionado. ¿Deseas continuar?');">
           <?= csrf_campo() ?>
           <div class="input-group">
             <input type="file" name="archivo_sql" class="form-control" accept=".sql" required>

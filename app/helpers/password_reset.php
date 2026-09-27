@@ -196,12 +196,12 @@ function password_reset_solicitar(PDO $pdo, string $email, ?string $ip = null): 
     // 3. Caso cuenta Google-only (password_hash NULL): no se genera token
     if ($usuario['password_hash'] === null || $usuario['auth_provider'] === 'google') {
         $nombre = $usuario['nombre'] ?: 'Lector';
-        $asunto = 'Inicio de sesión en BookSwap (cuenta de Google)';
+        $asunto = 'Inicio de sesión en LibrosBro (cuenta de Google)';
         $cuerpo = "Hola {$nombre},\n\n"
-                . "Has solicitado instrucciones para acceder a tu cuenta en BookSwap.\n\n"
-                . "Tu cuenta está vinculada a Google. Para iniciar sesión, por favor utiliza el botón 'Continuar con Google' en la página de acceso de BookSwap.\n\n"
+                . "Has solicitado instrucciones para acceder a tu cuenta en LibrosBro.\n\n"
+                . "Tu cuenta está vinculada a Google. Para iniciar sesión, por favor utiliza el botón 'Continuar con Google' en la página de acceso de LibrosBro.\n\n"
                 . "No es necesario restablecer una contraseña porque tu autenticación se realiza de forma directa y segura mediante tu cuenta de Google.\n\n"
-                . "Saludos,\nEl equipo de BookSwap";
+                . "Saludos,\nEl equipo de LibrosBro";
 
         email_enviar($emailNormalizado, $asunto, $cuerpo);
 
@@ -249,14 +249,14 @@ function password_reset_solicitar(PDO $pdo, string $email, ?string $ip = null): 
     // Componer y enviar correo electrónico
     $enlace = password_reset_generar_enlace($tokenClaro);
     $nombre = $usuario['nombre'] ?: 'Lector';
-    $asunto = 'Recuperación de contraseña en BookSwap';
+    $asunto = 'Recuperación de contraseña en LibrosBro';
     $cuerpo = "Hola {$nombre},\n\n"
-            . "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en BookSwap.\n\n"
+            . "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en LibrosBro.\n\n"
             . "Puedes definir tu nueva contraseña accediendo al siguiente enlace:\n"
             . "{$enlace}\n\n"
             . "Por motivos de seguridad, este enlace es de un solo uso y caducará en {$horas} hora(s).\n\n"
             . "Si no has solicitado este cambio, puedes ignorar este mensaje de forma segura.\n\n"
-            . "Saludos,\nEl equipo de BookSwap";
+            . "Saludos,\nEl equipo de LibrosBro";
 
     email_enviar($emailNormalizado, $asunto, $cuerpo);
 

@@ -8,7 +8,7 @@
  */
 declare(strict_types=1);
 
-$nombreCentro = $config['centro_nombre'] ?? 'BookSwap';
+$nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
 $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
 ?>
 
@@ -127,14 +127,14 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Gestión de Usuarios y Recuperación Segura</h3>
                 <p class="text-muted small mb-3">
-                  Administra las cuentas de lectores y personal: modifica roles (Lector, Personal, Admin), desactiva usuarios inactivos y genera enlaces temporales de reseteo de contraseña de un solo uso con un clic.
+                  Administra las cuentas de lectores y personal: modifica roles (Lector, Personal, Admin), desactiva usuarios inactivos, genera enlaces con código QR para restablecer claves in situ o elimina definitivamente cuentas e historiales liberando el correo para un nuevo alta.
                 </p>
                 <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_usuarios.png', 'Gestión de Usuarios y Enlaces de Contraseña')">
                   <img src="/assets/img/ayuda/admin_usuarios.png" alt="Gestión de Usuarios" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
-                  <span class="small text-muted"><i class="bi bi-key text-warning me-1"></i>Enlace seguro 1h</span>
+                  <span class="small text-muted"><i class="bi bi-shield-check text-primary me-1"></i>QR In Situ + Borrado RGPD</span>
                   <a href="/admin/usuarios" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">Gestionar Usuarios <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -493,9 +493,9 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Economía Circular y Donación de Libros</h3>
                 <p class="text-muted small mb-3">
-                  BookSwap transforma libros leídos que ya no se usan en créditos de lectura. Trae tus ejemplares al mostrador, recibe tokens y llévate nuevas historias para seguir leyendo.
+                  LibrosBro transforma libros leídos que ya no se usan en créditos de lectura. Trae tus ejemplares al mostrador, recibe tokens y llévate nuevas historias para seguir leyendo.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_home.png', 'Página Principal de BookSwap')">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_home.png', 'Página Principal de LibrosBro')">
                   <img src="/assets/img/ayuda/guest_home.png" alt="Página de Inicio" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
@@ -559,7 +559,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
         <img id="imgModalCaptura" src="" alt="Captura ampliada" class="img-fluid rounded-3 shadow-sm" style="max-height: 80vh; object-fit: contain;">
       </div>
       <div class="modal-footer border-top py-2 px-4 justify-content-between">
-        <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Captura real del entorno de BookSwap</span>
+        <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Captura real del entorno de LibrosBro</span>
         <button type="button" class="btn btn-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>

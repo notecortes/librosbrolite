@@ -21,7 +21,7 @@ require_once __DIR__ . '/../../helpers/funciones.php';
  $flash       = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
  $tiposFlash  = ['exito' => 'success', 'error' => 'danger', 'aviso' => 'warning', 'info' => 'info'];
- $nombreCentro = $config['centro_nombre'] ?: 'BookSwap';
+ $nombreCentro = $config['centro_nombre'] ?: 'LibrosBro';
 ?>
 <!doctype html>
 <html lang="es">
@@ -29,7 +29,7 @@ unset($_SESSION['flash']);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e($titulo) ?> · <?= e($nombreCentro) ?></title>
-  <meta name="description" content="BookSwap — Intercambia libros, gana tokens y llénate de historias.">
+  <meta name="description" content="LibrosBro — Intercambia libros, gana tokens y llénate de historias.">
   <?php if ($csrf_token !== ''): ?>
   <meta name="csrf-token" content="<?= e($csrf_token) ?>">
   <?php endif; ?>
@@ -53,7 +53,7 @@ unset($_SESSION['flash']);
     document.documentElement.setAttribute('data-bs-theme', t);
   })();
 
-  function toggleTemaBookSwap() {
+  function toggleTemaLibrosBro() {
     var actual = document.documentElement.getAttribute('data-bs-theme') || document.documentElement.getAttribute('data-theme') || 'light';
     var nuevo = (actual === 'dark') ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', nuevo);
@@ -67,6 +67,7 @@ unset($_SESSION['flash']);
       try { window.BS.setTema(nuevo, false); } catch (e) {}
     }
   }
+  window.toggleTemaBookSwap = toggleTemaLibrosBro;
   </script>
 </head>
 <body>
@@ -76,8 +77,8 @@ unset($_SESSION['flash']);
     <div class="container-xxl">
       <?php $logoVer = @filemtime(dirname(__DIR__, 2) . '/public/assets/img/logo.svg') ?: 3; ?>
       <a class="navbar-brand d-flex align-items-center gap-2 fw-800" href="<?= $usuario ? '/dashboard' : '/' ?>">
-        <img src="/assets/img/logo.svg?v=<?= $logoVer ?>" alt="BookSwap" width="68" height="68" class="brand-logo">
-        <span>BookSwap</span>
+        <img src="/assets/img/logo.svg?v=<?= $logoVer ?>" alt="LibrosBro" width="68" height="68" class="brand-logo">
+        <span>LibrosBro</span>
       </a>
       <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navPrincipal"
               aria-controls="navPrincipal" aria-expanded="false" aria-label="Abrir menú">
@@ -116,7 +117,7 @@ unset($_SESSION['flash']);
         </ul>
         <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
           <li class="nav-item">
-            <button class="btn btn-soft btn-sm" type="button" id="btn-toggle-theme" data-toggle-theme="1" onclick="toggleTemaBookSwap();" aria-label="Cambiar tema claro/oscuro">
+            <button class="btn btn-soft btn-sm" type="button" id="btn-toggle-theme" data-toggle-theme="1" onclick="toggleTemaLibrosBro();" aria-label="Cambiar tema claro/oscuro">
               <i class="bi bi-moon-stars icono-luna"></i><i class="bi bi-sun icono-sol"></i>
             </button>
           </li>
@@ -170,6 +171,7 @@ unset($_SESSION['flash']);
                 <li><a class="dropdown-item" href="/mi-historial"><i class="bi bi-clock-history me-2"></i>Mi historial y movimientos</a></li>
                 <li><a class="dropdown-item" href="/mis-reservas"><i class="bi bi-bookmark me-2"></i>Mis reservas</a></li>
                 <li><a class="dropdown-item" href="/wishlist"><i class="bi bi-bell me-2"></i>Lista de deseos (avisos)</a></li>
+                <li><a class="dropdown-item" href="/cambiar-password"><i class="bi bi-key me-2 text-primary"></i>Cambiar contraseña</a></li>
                 <li><a class="dropdown-item" href="/ayuda"><i class="bi bi-question-circle me-2 text-info"></i>Centro de Ayuda</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>

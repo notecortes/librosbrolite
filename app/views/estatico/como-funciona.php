@@ -6,7 +6,7 @@
  */
 declare(strict_types=1);
 
-$nombreCentro = $config['centro_nombre'] ?? 'BookSwap';
+$nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
 ?>
 
 <div class="py-2">

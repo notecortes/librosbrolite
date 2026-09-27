@@ -3,7 +3,7 @@
         "id": 6,
         "nombre": "alumno@alumno.com",
         "email": "alumno@alumno.com",
-        "password_hash": "$2y$10$bZj7OkNULRUWXy3AF1Ed8.nVOa\/Y67SiW\/V6F63fs79hNrHxRF\/aG",
+        "password_hash": "$2y$10$zaBP.6m6d9nljNCUZVDpdOWcDTcX0UUjUQeTb.64pzhbPUB6A91dq",
         "rol_id": 3,
         "activo": 1,
         "auth_provider": "local",

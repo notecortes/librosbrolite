@@ -772,7 +772,7 @@ function catalogo_buscar_isbn(PDO $pdo, string $isbn): array {
  * @return string Código XML del SVG renderizado
  */
 function catalogo_generar_svg_portada(string $titulo, string $autor = '', string $genero = ''): string {
-    $tituloSeguro = htmlspecialchars(mb_strimwidth($titulo ?: 'BookSwap', 0, 45, '…'), ENT_XML1, 'UTF-8');
+    $tituloSeguro = htmlspecialchars(mb_strimwidth($titulo ?: 'LibrosBro', 0, 45, '…'), ENT_XML1, 'UTF-8');
     $autorSeguro  = htmlspecialchars(mb_strimwidth($autor ?: 'Biblioteca Ciudadana', 0, 35, '…'), ENT_XML1, 'UTF-8');
     $generoSeguro = htmlspecialchars(mb_strimwidth($genero ?: 'Lectura', 0, 20, ''), ENT_XML1, 'UTF-8');
 

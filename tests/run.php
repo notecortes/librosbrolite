@@ -191,10 +191,10 @@ if (in_array('--no-reset', $argv ?? [], true)) {
 }
 
 group('T-SMOKE · Humo (activo desde la base)');
-it('T-SMOKE-01: la home responde 200 y muestra BookSwap', function () {
+it('T-SMOKE-01: la home responde 200 y muestra LibrosBro', function () {
     $r = http_get('/');
     assert_http_code(200, $r);
-    assert_contains($r['body'], 'BookSwap');
+    assert_contains($r['body'], 'LibrosBro');
 });
 it('T-SMOKE-07: /health.php responde 200 con ok:true', function () {
     $r = http_get('/health.php');
@@ -3063,10 +3063,13 @@ it('T-RESET-05: ADMIN genera enlace desde panel → funciona una vez y queda aud
     assert_true(!empty($aud), 'Auditoría registrada para password_reset_enlace');
     assert_equals(1, (int) $aud['usuario_id'], 'Autor de la auditoría es el administrador (id=1)');
 
-    // Verificar que el enlace se muestra en panel y funciona una vez
+    // Verificar que el enlace se muestra en panel, incluye el contenedor QR in situ y funciona una vez
     $rFollow = http_get('/admin/usuarios', $sAdmin);
     preg_match('#/reset/([a-f0-9]{64})#', $rFollow['body'], $mToken);
     assert_true(!empty($mToken[1]), 'El token en texto plano aparece en el panel del admin para copiar');
+    assert_contains($rFollow['body'], 'id="qrcodeResetContainer"', 'El contenedor del código QR in situ está presente en el panel');
+    assert_contains($rFollow['body'], 'id="modalQRResetGrande"', 'El modal para ampliar el código QR está disponible');
+    assert_contains($rFollow['body'], 'qrcode.min.js', 'La librería de renderizado QR está incluida en la vista');
     $tokenAdmin = $mToken[1];
 
     $sLector = new_session();
@@ -3117,6 +3120,173 @@ it('T-RESET-06: Cuenta google-only: no se genera token; mensaje orientado a Goog
     assert_true(!empty($ultimoMail), 'Se ha despachado correo');
     assert_equals($emailGoogle, $ultimoMail['destinatario'], 'Destinatario correcto');
     assert_contains($ultimoMail['cuerpo'], 'Google', 'El cuerpo del correo explica que la cuenta usa Google');
+});
+
+it('T-ADMIN-DEL: Eliminación completa de cuenta e historial por admin y posibilidad de re-registro', function () {
+    $sAdmin = login_como('admin');
+    http_get('/admin/usuarios', $sAdmin);
+    $adminId = (int) db_val("SELECT id FROM usuarios WHERE email = 'admin@bookswap.local'");
+
+    // 1. Crear un usuario con reservas, tokens, wishlist, notificaciones
+    $emailTarget = 'borrame_' . uniqid() . '@example.com';
+    $resCrear = admin_usuario_crear(db(), 'Usuario Para Borrar', $emailTarget, 'password123', 3, null, $adminId);
+    assert_true($resCrear['ok'], 'Usuario creado para prueba de borrado');
+    $targetId = (int) $resCrear['usuario_id'];
+
+    // Añadir tokens adicionales
+    ledger_registrar_movimiento(db(), $targetId, 5, 'ajuste', null, 'Carga de prueba');
+
+    // Añadir una reserva activa con copia
+    $copiaId = (int) db_val("SELECT id FROM ejemplares WHERE estado = 'disponible' LIMIT 1");
+    if ($copiaId) {
+        db_exec("UPDATE ejemplares SET estado = 'reservado' WHERE id = ?", [$copiaId]);
+        db_exec("INSERT INTO transacciones (tipo, ejemplar_id, usuario_id, tokens, metodo_pago, codigo, estado, fecha_limite, created_at)
+                 VALUES ('reserva', ?, ?, 1, 'tokens', 'RES-TESTBORR1', 'activa', NOW() + INTERVAL 2 DAY, NOW())", [$copiaId, $targetId]);
+    }
+
+    // Añadir wishlist y notificaciones
+    $libroId = (int) db_val("SELECT id FROM libros LIMIT 1");
+    if ($libroId) {
+        db_exec("INSERT INTO wishlist (usuario_id, libro_id) VALUES (?, ?)", [$targetId, $libroId]);
+    }
+    db_exec("INSERT INTO notificaciones (usuario_id, mensaje, leida) VALUES (?, 'Notif prueba', 0)", [$targetId]);
+
+    // Verificar que existen registros previos
+    assert_true((int) db_val('SELECT COUNT(*) FROM movimientos_tokens WHERE usuario_id = ?', [$targetId]) > 0, 'Tiene tokens');
+    assert_true((int) db_val('SELECT COUNT(*) FROM notificaciones WHERE usuario_id = ?', [$targetId]) > 0, 'Tiene notificaciones');
+
+    // 2. Personal intenta borrar -> 403
+    $sPers = login_como('personal');
+    http_get('/mostrador', $sPers);
+    $rPers = http_post('/admin/usuarios/eliminar', ['usuario_id' => $targetId], $sPers);
+    assert_equals(403, $rPers['code'], 'Personal recibe 403 al intentar borrar cuenta');
+
+    // 3. Admin no puede borrar superadmin (id=1) ni su propia cuenta
+    http_get('/admin/usuarios', $sAdmin);
+    $rAdminSelf = http_post('/admin/usuarios/eliminar', ['usuario_id' => $adminId], $sAdmin);
+    assert_true(in_array($rAdminSelf['code'], [200, 302], true), 'Responde redirección');
+    assert_equals(1, (int) db_val('SELECT COUNT(*) FROM usuarios WHERE id = ?', [$adminId]), 'Admin no borrado');
+
+    // 4. Admin borra la cuenta
+    http_get('/admin/usuarios', $sAdmin);
+    $rDel = http_post('/admin/usuarios/eliminar', ['usuario_id' => $targetId], $sAdmin);
+    assert_true(in_array($rDel['code'], [200, 302], true), 'Admin ejecuta eliminación con éxito');
+
+    // Verificar que el usuario no existe en la base de datos
+    $existe = (int) db_val('SELECT COUNT(*) FROM usuarios WHERE id = ?', [$targetId]);
+    assert_equals(0, $existe, 'El usuario ya no existe en la tabla usuarios');
+
+    // Verificar que todo su historial ha sido purgado
+    $movs = (int) db_val('SELECT COUNT(*) FROM movimientos_tokens WHERE usuario_id = ?', [$targetId]);
+    assert_equals(0, $movs, 'Historial de tokens purgado por completo');
+
+    $trans = (int) db_val('SELECT COUNT(*) FROM transacciones WHERE usuario_id = ?', [$targetId]);
+    assert_equals(0, $trans, 'Transacciones purgadas por completo');
+
+    $notifs = (int) db_val('SELECT COUNT(*) FROM notificaciones WHERE usuario_id = ?', [$targetId]);
+    assert_equals(0, $notifs, 'Notificaciones eliminadas');
+
+    if ($copiaId) {
+        $estadoCopia = db_val('SELECT estado FROM ejemplares WHERE id = ?', [$copiaId]);
+        assert_equals('disponible', $estadoCopia, 'La copia reservada vuelve a estado disponible');
+    }
+
+    // Verificar auditoría
+    $aud = db()->query("SELECT * FROM registro_auditoria WHERE accion = 'usuario.eliminar' AND entidad_id = {$targetId} ORDER BY id DESC LIMIT 1")->fetch();
+    assert_true(!empty($aud), 'Auditoría registrada para usuario.eliminar');
+
+    // 5. El usuario puede volver a registrarse con el MISMO email sin errores
+    $sNuevo = new_session();
+    http_get('/registro', $sNuevo);
+    $rReg = http_post('/registro', [
+        'nombre'           => 'Usuario Renacido',
+        'email'            => $emailTarget,
+        'password'         => 'nuevaClaveSegura123',
+        'password_confirm' => 'nuevaClaveSegura123',
+    ], $sNuevo);
+
+    assert_true(in_array($rReg['code'], [200, 302], true), 'El usuario se registra nuevamente con el mismo email sin conflicto');
+    $nuevoId = (int) db_val('SELECT id FROM usuarios WHERE email = ?', [$emailTarget]);
+    assert_true($nuevoId > 0 && $nuevoId !== $targetId, 'Nueva cuenta creada con nuevo ID');
+});
+
+it('T-AUTH-PWD: Un usuario autenticado puede cambiar su contraseña tras hacer login', function () {
+    // 1. Invitado no autenticado es redirigido a /login
+    $sGuest = new_session();
+    $rGuest = http_get('/cambiar-password', $sGuest);
+    assert_equals(302, $rGuest['code'], 'Invitado recibe 302 al intentar acceder a /cambiar-password');
+    assert_contains($rGuest['headers'], '/login', 'Redirigido a /login');
+
+    // 2. Crear un usuario de prueba específico para no alterar usuarios demo
+    $email = 'pwd_test_' . uniqid() . '@bookswap.local';
+    $hashIni = password_hash('claveInicial123', PASSWORD_BCRYPT);
+    db_exec("INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, email_verificado, auth_provider, fecha_registro)
+             VALUES ('Lector Cambio Clave', ?, ?, 3, 1, 1, 'local', NOW())", [$email, $hashIni]);
+    $userId = (int) db_val('SELECT id FROM usuarios WHERE email = ?', [$email]);
+
+    $sUser = new_session();
+    http_get('/login', $sUser);
+    $rLog = http_post('/login', ['email' => $email, 'password' => 'claveInicial123'], $sUser);
+    assert_true(in_array($rLog['code'], [200, 302], true), 'Login exitoso con clave inicial');
+
+    // 3. Ver vista GET /cambiar-password
+    $rView = http_get('/cambiar-password', $sUser);
+    assert_equals(200, $rView['code'], 'GET /cambiar-password responde 200 para usuario autenticado');
+    assert_contains($rView['body'], 'password_actual', 'Formulario contiene campo para contraseña actual');
+    assert_contains($rView['body'], 'password_nueva', 'Formulario contiene campo para nueva contraseña');
+    assert_contains($rView['body'], 'password_confirm', 'Formulario contiene campo para confirmación');
+
+    // 4. Intento con contraseña actual errónea
+    $rErrActual = http_post('/cambiar-password', [
+        'password_actual'  => 'claveIncorrecta',
+        'password_nueva'   => 'nuevaClaveValida123',
+        'password_confirm' => 'nuevaClaveValida123',
+    ], $sUser);
+    assert_contains($rErrActual['body'], 'La contraseña actual no es correcta', 'Rechaza contraseña actual incorrecta');
+
+    // 5. Intento con nueva contraseña demasiado corta (< 6 caracteres)
+    http_get('/cambiar-password', $sUser);
+    $rCorta = http_post('/cambiar-password', [
+        'password_actual'  => 'claveInicial123',
+        'password_nueva'   => '123',
+        'password_confirm' => '123',
+    ], $sUser);
+    assert_contains($rCorta['body'], 'al menos 6 caracteres', 'Rechaza contraseña demasiado corta');
+
+    // 6. Intento con confirmación que no coincide
+    http_get('/cambiar-password', $sUser);
+    $rMismatch = http_post('/cambiar-password', [
+        'password_actual'  => 'claveInicial123',
+        'password_nueva'   => 'nuevaClaveValida123',
+        'password_confirm' => 'otraClaveDiferente123',
+    ], $sUser);
+    assert_contains($rMismatch['body'], 'no coinciden', 'Rechaza si las contraseñas no coinciden');
+
+    // 7. Cambio correcto de contraseña
+    http_get('/cambiar-password', $sUser);
+    $rOk = http_post('/cambiar-password', [
+        'password_actual'  => 'claveInicial123',
+        'password_nueva'   => 'superClaveSecreta999',
+        'password_confirm' => 'superClaveSecreta999',
+    ], $sUser);
+    assert_true(in_array($rOk['code'], [200, 302], true), 'POST /cambiar-password exitoso');
+
+    // 8. Verificar que el hash se actualizó y la nueva contraseña verifica
+    $hashActual = db_val('SELECT password_hash FROM usuarios WHERE id = ?', [$userId]);
+    assert_true(password_verify('superClaveSecreta999', $hashActual), 'El nuevo hash verifica con la nueva contraseña');
+    assert_true(!password_verify('claveInicial123', $hashActual), 'La clave inicial ya no verifica');
+
+    // 9. Comprobar inicio de sesión con nueva clave
+    $sNewLogin = new_session();
+    http_get('/login', $sNewLogin);
+    $rLoginNew = http_post('/login', ['email' => $email, 'password' => 'superClaveSecreta999'], $sNewLogin);
+    assert_true(in_array($rLoginNew['code'], [200, 302], true), 'Login exitoso con la NUEVA contraseña');
+
+    // 10. Login con la clave vieja falla
+    $sOldLogin = new_session();
+    http_get('/login', $sOldLogin);
+    $rLoginOld = http_post('/login', ['email' => $email, 'password' => 'claveInicial123'], $sOldLogin);
+    assert_contains($rLoginOld['body'], 'Credenciales incorrectas', 'Login con clave antigua rechazado');
 });
 
 /* ─── 6. RESUMEN ─── */

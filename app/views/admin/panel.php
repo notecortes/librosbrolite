@@ -22,7 +22,7 @@ declare(strict_types=1);
     <!-- Breadcrumbs de navegación -->
     <nav aria-label="breadcrumb" class="mb-2">
       <ol class="breadcrumb mb-1">
-        <li class="breadcrumb-item"><a href="/dashboard">BookSwap</a></li>
+        <li class="breadcrumb-item"><a href="/dashboard">LibrosBro</a></li>
         <li class="breadcrumb-item active" aria-current="page">Panel de Administración</li>
       </ol>
     </nav>

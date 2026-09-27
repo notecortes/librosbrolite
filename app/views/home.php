@@ -77,7 +77,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
 <!-- 2. Cómo funciona: 3 pasos claros -->
 <section class="mb-5">
   <div class="text-center mb-4">
-    <h2 class="h3 fw-800">¿Cómo funciona BookSwap?</h2>
+    <h2 class="h3 fw-800">¿Cómo funciona LibrosBro?</h2>
     <p class="text-muted">Intercambio presencial, sencillo, transparente y sin dinero.</p>
   </div>
   <div class="row g-4">
@@ -177,7 +177,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
     <div class="col-md-8">
       <h2 class="h4 fw-800 mb-2">Ven a visitarnos a nuestro espacio físico</h2>
       <p class="text-muted mb-0">
-        <?= e($config['centro_nombre'] ?? 'BookSwap') ?> · <?= e($config['centro_direccion'] ?? 'Consulta nuestra ubicación') ?>.
+        <?= e($config['centro_nombre'] ?? 'LibrosBro') ?> · <?= e($config['centro_direccion'] ?? 'Consulta nuestra ubicación') ?>.
         Gestionamos las recogidas y los depósitos en persona para garantizar la mejor calidad en cada libro.
       </p>
     </div>

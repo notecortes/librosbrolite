@@ -17,7 +17,7 @@ declare(strict_types=1);
       <section class="mb-4">
         <h2 class="h5 fw-bold text-primary mb-2">1. Responsable del Tratamiento</h2>
         <p class="mb-2">
-          El responsable del tratamiento de los datos recabados en esta plataforma es el centro ciudadano <strong><?= e($config['centro_nombre'] ?? 'BookSwap — Biblioteca Ciudadana') ?></strong>.
+          El responsable del tratamiento de los datos recabados en esta plataforma es el centro ciudadano <strong><?= e($config['centro_nombre'] ?? 'LibrosBro — Biblioteca Ciudadana') ?></strong>.
         </p>
         <div class="card p-3 bg-surface-2 border-0 rounded-3 mb-3">
           <ul class="list-unstyled mb-0 small">

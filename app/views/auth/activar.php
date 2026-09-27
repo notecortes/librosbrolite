@@ -14,7 +14,7 @@ declare(strict_types=1);
         </div>
         <h1 class="h3 fw-800 mb-1">Activa tu cuenta</h1>
         <p class="text-muted small">
-          Para realizar reservas e intercambiar libros en BookSwap necesitas vincular tu número de socio oficial.
+          Para realizar reservas e intercambiar libros en LibrosBro necesitas vincular tu número de socio oficial.
         </p>
       </div>
 

@@ -196,3 +196,45 @@ function usuarios_restaurar_personalizados(?PDO $pdo = null): int {
         return 0;
     }
 }
+
+/**
+ * Elimina un usuario del archivo de almacenamiento persistente usuarios_persistentes.json.
+ *
+ * @param string $email Correo electrónico del usuario
+ * @return bool True si se procesó correctamente
+ */
+function usuarios_eliminar_de_persistencia(string $email): bool {
+    $archivo = usuarios_obtener_ruta_persistencia();
+    if (!file_exists($archivo)) {
+        return true;
+    }
+
+    $contenido = @file_get_contents($archivo);
+    if ($contenido === false) {
+        return false;
+    }
+
+    $usuarios = json_decode($contenido, true);
+    if (!is_array($usuarios)) {
+        return true;
+    }
+
+    $emailNorm = strtolower(trim($email));
+    $filtrados = [];
+    $encontrado = false;
+
+    foreach ($usuarios as $u) {
+        if (isset($u['email']) && strtolower(trim((string) $u['email'])) === $emailNorm) {
+            $encontrado = true;
+            continue;
+        }
+        $filtrados[] = $u;
+    }
+
+    if ($encontrado) {
+        @file_put_contents($archivo, json_encode(array_values($filtrados), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
+    return true;
+}
+

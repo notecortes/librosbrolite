@@ -20,7 +20,7 @@ $googleHabilitado = !empty(trim((string) ($config['google_client_id'] ?? '')));
           <i class="bi bi-box-arrow-in-right fs-3"></i>
         </div>
         <h1 class="h3 fw-800 mb-1">Iniciar sesión</h1>
-        <p class="text-muted small">Accede a tu cuenta de BookSwap para gestionar tus libros y reservas.</p>
+        <p class="text-muted small">Accede a tu cuenta de LibrosBro para gestionar tus libros y reservas.</p>
       </div>
 
       <?php if (!empty($error)): ?>
@@ -56,7 +56,7 @@ $googleHabilitado = !empty(trim((string) ($config['google_client_id'] ?? '')));
         </div>
 
         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-          <i class="bi bi-box-arrow-in-right me-1"></i> Entrar a BookSwap
+          <i class="bi bi-box-arrow-in-right me-1"></i> Entrar a LibrosBro
         </button>
       </form>
 

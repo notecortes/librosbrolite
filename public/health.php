@@ -12,4 +12,4 @@ try {
     $db = 'error';
     http_response_code(503);
 }
-echo json_encode(['ok' => $db === 'ok', 'db' => $db, 'app' => 'BookSwap']);
+echo json_encode(['ok' => $db === 'ok', 'db' => $db, 'app' => 'LibrosBro']);

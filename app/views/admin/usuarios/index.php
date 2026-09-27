@@ -56,25 +56,84 @@ declare(strict_types=1);
   </div>
 <?php endif; ?>
 
-<!-- Tarjeta de Enlace de Acceso / Reset (Fase 22) -->
+<!-- Tarjeta de Enlace de Acceso / Reset con QR In Situ (Fase 22) -->
 <?php if (!empty($resetEnlaceInfo)): ?>
-  <div class="alert alert-primary border-0 shadow-sm rounded-4 p-4 mb-4">
-    <div class="d-flex align-items-start gap-3">
-      <div class="p-2 bg-primary text-white rounded-circle"><i class="bi bi-key-fill fs-4"></i></div>
-      <div class="flex-grow-1">
-        <h2 class="h5 fw-bold text-dark mb-1">🔑 Enlace de Acceso Generado</h2>
-        <p class="text-dark small mb-2">
-          Se ha generado un enlace de acceso presencial para <strong><?= htmlspecialchars($resetEnlaceInfo['email']) ?></strong>.
-          Este enlace solo se muestra en esta ocasión, caduca en <strong><?= (int) $resetEnlaceInfo['expira_horas'] ?> hora(s)</strong> y es de un solo uso:
-        </p>
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <input type="text" readonly class="form-control font-monospace form-control-sm w-auto flex-grow-1" id="enlaceResetInput" value="<?= htmlspecialchars($resetEnlaceInfo['enlace']) ?>">
-          <button type="button" class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('enlaceResetInput').value); this.innerText='¡Copiado!';">
-            <i class="bi bi-clipboard me-1"></i>Copiar Enlace
+  <div class="alert alert-primary border-0 shadow-sm rounded-4 p-4 mb-4" id="tarjetaEnlaceReset">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-7">
+        <div class="d-flex align-items-start gap-3">
+          <div class="p-2 bg-primary text-white rounded-circle flex-shrink-0 shadow-sm"><i class="bi bi-key-fill fs-4"></i></div>
+          <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <h2 class="h5 fw-bold text-dark mb-0">🔑 Enlace de Acceso Generado</h2>
+              <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Válido <?= (int) $resetEnlaceInfo['expira_horas'] ?> h</span>
+              <span class="badge bg-secondary text-white">Un solo uso</span>
+            </div>
+            <p class="text-dark small mb-2">
+              Se ha generado un enlace de restablecimiento presencial para <strong><?= htmlspecialchars($resetEnlaceInfo['email']) ?></strong>.
+              Este enlace solo se muestra en esta ocasión.
+            </p>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <input type="text" readonly class="form-control font-monospace form-control-sm w-auto flex-grow-1" id="enlaceResetInput" value="<?= htmlspecialchars($resetEnlaceInfo['enlace']) ?>">
+              <button type="button" class="btn btn-sm btn-primary" id="btnCopiarReset" onclick="copiarEnlaceReset()">
+                <i class="bi bi-clipboard me-1"></i>Copiar Enlace
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="imprimirTarjetaReset()">
+                <i class="bi bi-printer me-1"></i>Imprimir Pase
+              </button>
+            </div>
+            <div class="small text-muted d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-success"></i>
+              <span>El usuario puede escanear el código QR contiguo con su teléfono para cambiar la contraseña in situ.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white text-center mx-auto" style="max-width: 250px;">
+          <div class="d-flex align-items-center justify-content-center gap-1 mb-2">
+            <i class="bi bi-qr-code-scan text-primary"></i>
+            <span class="fw-bold small text-dark">Escanear In Situ</span>
+          </div>
+          <div id="qrcodeResetContainer" class="d-flex justify-content-center align-items-center p-2 bg-white rounded border" style="min-height: 140px;">
+            <!-- Renderizado dinámico QR -->
+          </div>
+          <p class="text-muted extra-small mt-2 mb-1" style="font-size: 0.75rem; line-height: 1.2;">
+            Apunta con la cámara del móvil para cambiar la contraseña ahora mismo
+          </p>
+          <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 mt-1" style="font-size: 0.75rem;" onclick="abrirModalQRGrande()">
+            <i class="bi bi-arrows-fullscreen me-1"></i>Ampliar QR
           </button>
         </div>
-        <div class="small text-muted">
-          <i class="bi bi-shield-exclamation me-1"></i>Entrégaselo en persona al usuario para que configure su nueva contraseña de acceso.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para ver el QR en grande para escanear a distancia en el mostrador -->
+  <div class="modal fade" id="modalQRResetGrande" tabindex="-1" aria-labelledby="modalQRResetGrandeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="modalQRResetGrandeLabel"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Cambiar Contraseña In Situ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center p-4">
+          <p class="text-muted small mb-3">
+            Apunta con la cámara de tu móvil al código QR para acceder inmediatamente a la pantalla de cambio de contraseña:
+          </p>
+          <div id="qrcodeResetGrande" class="d-flex justify-content-center align-items-center p-3 bg-white border rounded-3 mx-auto shadow-sm" style="max-width: 270px; min-height: 250px;"></div>
+          <div class="mt-3">
+            <span class="badge bg-light text-dark border font-monospace small px-3 py-2"><?= htmlspecialchars($resetEnlaceInfo['email']) ?></span>
+          </div>
+          <div class="text-muted extra-small mt-2" style="font-size: 0.8rem;">
+            <i class="bi bi-clock-history me-1"></i>Válido durante <?= (int) $resetEnlaceInfo['expira_horas'] ?> hora(s) (un solo uso)
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 justify-content-center">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="imprimirTarjetaReset()">
+            <i class="bi bi-printer me-1"></i>Imprimir Pase
+          </button>
         </div>
       </div>
     </div>
@@ -217,6 +276,20 @@ declare(strict_types=1);
                         </button>
                       </form>
                     </li>
+
+                    <!-- Eliminar Cuenta e Historial Definitivamente -->
+                    <?php if ((int)$u['id'] !== 1 && (int)($usuario['id'] ?? 0) !== (int)$u['id']): ?>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <button type="button" class="dropdown-item text-danger fw-semibold"
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarUsuario"
+                                data-usuario-id="<?= $u['id'] ?>"
+                                data-usuario-nombre="<?= htmlspecialchars($u['nombre']) ?>"
+                                data-usuario-email="<?= htmlspecialchars($u['email']) ?>">
+                          <i class="bi bi-trash3 me-2"></i>Eliminar Cuenta e Historial
+                        </button>
+                      </li>
+                    <?php endif; ?>
                   </ul>
                 </div>
               </td>
@@ -357,10 +430,155 @@ declare(strict_types=1);
   </div>
 </div>
 
-<script>
+<!-- Modal: Eliminar Cuenta de Usuario -->
+<div class="modal fade" id="modalEliminarUsuario" tabindex="-1" aria-labelledby="modalEliminarUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/usuarios/eliminar">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+        <input type="hidden" name="usuario_id" id="eliminarUsuarioId" value="">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger" id="modalEliminarUsuarioLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Cuenta e Historial
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body p-4">
+          <p class="mb-3">
+            ¿Estás seguro de que deseas eliminar permanentemente la cuenta de <strong id="eliminarUsuarioNombre" class="text-dark"></strong> (<span id="eliminarUsuarioEmail" class="font-monospace text-muted small"></span>)?
+          </p>
+          <div class="alert alert-danger border-0 rounded-3 p-3 small mb-3">
+            <div class="fw-bold mb-1"><i class="bi bi-shield-x me-1"></i>Esta acción es irreversible:</div>
+            <ul class="mb-0 ps-3">
+              <li>Se cancelarán sus reservas activas y los libros volverán a estar disponibles.</li>
+              <li>Se borrarán todos sus movimientos de tokens y transacciones.</li>
+              <li>Se eliminarán su lista de deseos, notificaciones e historial.</li>
+              <li><strong>El correo electrónico quedará libre</strong> para que el usuario pueda volver a crear su cuenta desde cero si lo desea.</li>
+            </ul>
+          </div>
+          <p class="extra-small text-muted mb-0" style="font-size: 0.8rem;">
+            Esta acción se registrará en el registro de auditoría del sistema.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-semibold">
+            <i class="bi bi-trash3 me-1"></i>Sí, Eliminar Cuenta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
+<!-- Librería para renderizado nativo offline de códigos QR -->
+<script src="/assets/js/qrcode.min.js"></script>
+<script>
+<?php if (!empty($resetEnlaceInfo)): ?>
+function copiarEnlaceReset() {
+  var input = document.getElementById('enlaceResetInput');
+  if (!input) return;
+  var btn = document.getElementById('btnCopiarReset');
+  navigator.clipboard.writeText(input.value).then(function() {
+    if (btn) {
+      var origHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>¡Copiado!';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-success');
+      setTimeout(function() {
+        btn.innerHTML = origHtml;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+      }, 2500);
+    }
+  }).catch(function() {
+    input.select();
+    document.execCommand('copy');
+    if (btn) btn.innerText = '¡Copiado!';
+  });
+}
+
+function abrirModalQRGrande() {
+  var modalEl = document.getElementById('modalQRResetGrande');
+  if (!modalEl) return;
+  var containerGrande = document.getElementById('qrcodeResetGrande');
+  if (containerGrande && !containerGrande.hasChildNodes()) {
+    var resetUrl = <?= json_encode($resetEnlaceInfo['enlace'] ?? '') ?>;
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(containerGrande, {
+        text: resetUrl,
+        width: 240,
+        height: 240,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      containerGrande.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(resetUrl) + '" alt="QR Reset Grande" class="img-fluid rounded" style="width:240px;height:240px;">';
+    }
+  }
+  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+}
+
+function imprimirTarjetaReset() {
+  var qrImg = document.querySelector('#qrcodeResetContainer img') || document.querySelector('#qrcodeResetContainer canvas');
+  var qrSrc = '';
+  if (qrImg) {
+    qrSrc = qrImg.tagName.toLowerCase() === 'canvas' ? qrImg.toDataURL() : qrImg.src;
+  }
+  var email = <?= json_encode($resetEnlaceInfo['email'] ?? '') ?>;
+  var expira = <?= json_encode((int)($resetEnlaceInfo['expira_horas'] ?? 1)) ?>;
+  
+  var w = window.open('', '_blank', 'width=550,height=600');
+  if (!w) return;
+  w.document.write('<!DOCTYPE html><html><head><title>Pase de Acceso - ' + email + '</title>' +
+    '<style>' +
+    'body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 30px; color: #1e293b; background: #fff; }' +
+    '.card { border: 2px dashed #0d6efd; border-radius: 16px; padding: 25px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }' +
+    'h2 { margin: 0 0 4px; color: #0d6efd; font-size: 1.4rem; font-weight: 800; }' +
+    '.subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 16px; }' +
+    '.qr-box { background: #fff; padding: 12px; display: inline-block; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 14px; }' +
+    '.qr-box img { display: block; width: 180px; height: 180px; margin: 0 auto; }' +
+    '.email-box { background: #f1f5f9; padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; word-break: break-all; }' +
+    '.note { font-size: 0.78rem; color: #64748b; line-height: 1.4; margin-bottom: 15px; }' +
+    '.btn-print { background: #0d6efd; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }' +
+    '@media print { .btn-print { display: none; } body { padding: 0; } }' +
+    '</style></head><body>' +
+    '<div class="card">' +
+    '<h2>LibrosBro</h2>' +
+    '<div class="subtitle">Pase de Acceso y Restablecimiento</div>' +
+    '<div class="email-box">' + email + '</div>' +
+    '<div class="qr-box">' + (qrSrc ? '<img src="' + qrSrc + '" alt="QR">' : '') + '</div>' +
+    '<div class="note">Apunta con la cámara de tu móvil a este código QR para acceder y crear tu nueva contraseña.<br><strong>Válido por ' + expira + ' hora(s) (un solo uso).</strong></div>' +
+    '<button class="btn-print" onclick="window.print()">Imprimir este pase</button>' +
+    '</div>' +
+    '<script>setTimeout(function(){ window.print(); }, 400);<\/script>' +
+    '</body></html>');
+  w.document.close();
+}
+<?php endif; ?>
 
 document.addEventListener('DOMContentLoaded', function() {
+  <?php if (!empty($resetEnlaceInfo)): ?>
+  var container = document.getElementById('qrcodeResetContainer');
+  if (container) {
+    var resetUrl = <?= json_encode($resetEnlaceInfo['enlace'] ?? '') ?>;
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(container, {
+        text: resetUrl,
+        width: 140,
+        height: 140,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(resetUrl) + '" alt="QR Reset" class="img-fluid rounded" style="width:140px;height:140px;">';
+    }
+  }
+  <?php endif; ?>
+
   var modalEditar = document.getElementById('modalEditarUsuario');
   if (modalEditar) {
     modalEditar.addEventListener('show.bs.modal', function(event) {
@@ -378,6 +596,16 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('ajusteUsuarioId').value = button.getAttribute('data-usuario-id');
       document.getElementById('ajusteUsuarioNombre').innerText = button.getAttribute('data-usuario-nombre');
       document.getElementById('ajusteSaldoActual').innerText = button.getAttribute('data-saldo');
+    });
+  }
+
+  var modalEliminar = document.getElementById('modalEliminarUsuario');
+  if (modalEliminar) {
+    modalEliminar.addEventListener('show.bs.modal', function(event) {
+      var button = event.relatedTarget;
+      document.getElementById('eliminarUsuarioId').value = button.getAttribute('data-usuario-id');
+      document.getElementById('eliminarUsuarioNombre').innerText = button.getAttribute('data-usuario-nombre');
+      document.getElementById('eliminarUsuarioEmail').innerText = button.getAttribute('data-usuario-email');
     });
   }
 });

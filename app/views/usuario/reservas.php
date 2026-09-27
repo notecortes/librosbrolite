@@ -278,7 +278,7 @@ function imprimirComprobanteReserva(codigo, titulo, svgId) {
   var svgHtml = svgEl ? svgEl.outerHTML : '';
   var w = window.open('', '_blank', 'width=600,height=500');
   if (!w) return;
-  w.document.write('<!DOCTYPE html><html><head><title>Comprobante de Reserva - ' + codigo + '</title><style>body{font-family:sans-serif;text-align:center;padding:40px;} .box{border:2px dashed #333;border-radius:12px;padding:30px;display:inline-block;} h2{margin-bottom:5px;} .codigo{font-family:monospace;font-size:24px;font-weight:bold;margin:15px 0;} @media print{button{display:none;}}</style></head><body><div class="box"><h2>BookSwap — Reserva</h2><p>' + titulo + '</p>' + svgHtml + '<div class="codigo">' + codigo + '</div><p><small>Presenta este código de barras en el mostrador del centro.</small></p><button onclick="window.print()">Imprimir</button></div><script>setTimeout(function(){window.print();},300);<\/script></body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Comprobante de Reserva - ' + codigo + '</title><style>body{font-family:sans-serif;text-align:center;padding:40px;} .box{border:2px dashed #333;border-radius:12px;padding:30px;display:inline-block;} h2{margin-bottom:5px;} .codigo{font-family:monospace;font-size:24px;font-weight:bold;margin:15px 0;} @media print{button{display:none;}}</style></head><body><div class="box"><h2>LibrosBro — Reserva</h2><p>' + titulo + '</p>' + svgHtml + '<div class="codigo">' + codigo + '</div><p><small>Presenta este código de barras en el mostrador del centro.</small></p><button onclick="window.print()">Imprimir</button></div><script>setTimeout(function(){window.print();},300);<\/script></body></html>');
   w.document.close();
 }
 </script>

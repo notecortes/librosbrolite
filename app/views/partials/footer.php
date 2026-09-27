@@ -3,7 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../helpers/centro.php';
 
- $nombre    = $config['centro_nombre']    ?? 'BookSwap';
+ $nombre    = $config['centro_nombre']    ?? 'LibrosBro';
  $direccion = $config['centro_direccion'] ?? '';
  $telefono  = $config['centro_telefono']  ?? '';
  $email     = $config['centro_email']     ?? '';
@@ -21,7 +21,7 @@ require_once __DIR__ . '/../../helpers/centro.php';
       <div class="col-lg-4">
         <div class="d-flex align-items-center gap-2 mb-2">
           <?php $logoVerFooter = @filemtime(dirname(__DIR__, 2) . '/public/assets/img/logo.svg') ?: 3; ?>
-          <img src="/assets/img/logo.svg?v=<?= $logoVerFooter ?>" alt="BookSwap" width="60" height="60" class="footer-logo">
+          <img src="/assets/img/logo.svg?v=<?= $logoVerFooter ?>" alt="LibrosBro" width="60" height="60" class="footer-logo">
           <strong class="fs-5 text-white"><?= e($nombre) ?></strong>
         </div>
         <p class="mb-0">Intercambia libros, gana tokens y llénate de historias. Los tokens no caducan nunca y no tienen valor monetario.</p>

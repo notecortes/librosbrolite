@@ -57,7 +57,7 @@ INSERT INTO configuracion (clave, valor) VALUES
  ('retencion_backups','10'),
  ('ultimo_backup_auto', NULL),
  -- Datos del punto físico (Visítanos + footer global)
- ('centro_nombre','BookSwap — Biblioteca Ciudadana'),
+ ('centro_nombre','LibrosBro — Biblioteca Ciudadana'),
  ('centro_direccion','Calle de los Libros 42, 28004 Madrid'),
  ('centro_telefono','+34 910 123 456'),
  ('centro_email','hola@bookswap.local'),

@@ -186,7 +186,7 @@ switch ($uriPath) {
                 if ($nuevoUser) {
                     auth_iniciar_sesion($nuevoUser);
                 }
-                flash('Cuenta creada correctamente. ¡Bienvenido a BookSwap!', 'exito');
+                flash('Cuenta creada correctamente. ¡Bienvenido a LibrosBro!', 'exito');
                 redireccionar('/dashboard');
             } else {
                 render_vista('auth/registro', [
@@ -431,7 +431,45 @@ switch ($uriPath) {
             'reservasActivas' => $reservasActivas,
             'ultimosLibros' => $ultimosLibros,
             'ultimosMovimientos' => $ultimosMovimientos,
-        ], 'Mi BookSwap');
+        ], 'Mi LibrosBro');
+        break;
+
+    case '/cambiar-password':
+    case '/perfil/cambiar-password':
+    case '/mi-cuenta/seguridad':
+        exigir_autenticado();
+        $pdo = db();
+        $usuarioId = (int) $usuario['id'];
+        $error = null;
+        $exito = null;
+
+        // Comprobar si el usuario tiene contraseña actualmente
+        $stmtU = $pdo->prepare('SELECT password_hash, auth_provider, email FROM usuarios WHERE id = ? LIMIT 1');
+        $stmtU->execute([$usuarioId]);
+        $uInfo = $stmtU->fetch(PDO::FETCH_ASSOC);
+        $tienePassword = !empty($uInfo['password_hash']);
+
+        if ($metodo === 'POST') {
+            $passwordActual = (string) ($_POST['password_actual'] ?? '');
+            $passwordNueva = (string) ($_POST['password_nueva'] ?? '');
+            $passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
+
+            $res = auth_cambiar_password_usuario($pdo, $usuarioId, $passwordActual, $passwordNueva, $passwordConfirm);
+            if ($res['ok']) {
+                flash('Tu contraseña se ha actualizado correctamente.', 'exito');
+                redireccionar('/cambiar-password');
+            } else {
+                $error = $res['error'];
+            }
+        }
+
+        render_vista('usuario/cambiar_password', [
+            'config' => $config,
+            'usuario' => $usuario,
+            'tienePassword' => $tienePassword,
+            'error' => $error,
+            'exito' => $exito,
+        ], 'Cambiar Contraseña');
         break;
 
     case '/mis-depositos':
@@ -2172,6 +2210,24 @@ switch ($uriPath) {
             flash("Ajuste de {$cantidad} tokens aplicado. Nuevo saldo: {$ajuste['saldo_nuevo']}.", 'exito');
         } catch (Exception $e) {
             flash('Error en el ajuste de tokens: ' . $e->getMessage(), 'error');
+        }
+        redireccionar('/admin/usuarios');
+        break;
+
+    case '/admin/usuarios/eliminar':
+        exigir_permiso('usuarios.gestionar');
+        if ($metodo !== 'POST') {
+            redireccionar('/admin/usuarios');
+        }
+        $pdo = db();
+        $targetUserId = (int) ($_POST['usuario_id'] ?? 0);
+        $adminId = isset($usuario['id']) ? (int) $usuario['id'] : null;
+
+        try {
+            $resultado = admin_usuario_eliminar($pdo, $targetUserId, $adminId);
+            flash('La cuenta de ' . htmlspecialchars($resultado['nombre']) . ' (' . htmlspecialchars($resultado['email']) . ') y todo su historial han sido eliminados permanentemente. El correo queda libre para nuevo registro.', 'exito');
+        } catch (Exception $e) {
+            flash('Error al eliminar cuenta: ' . $e->getMessage(), 'error');
         }
         redireccionar('/admin/usuarios');
         break;

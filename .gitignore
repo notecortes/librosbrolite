@@ -5,3 +5,5 @@ node_modules/
 backups/*.sql
 uploads/*
 !uploads/.htaccess
+docs/data.txt
+docs/datos.txt

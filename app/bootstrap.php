@@ -66,7 +66,7 @@ foreach ($helpersOpcionales as $nombreHelper) {
 
 // 4. Variables globales del contrato de interfaz
 $config = [
-    'centro_nombre' => 'BookSwap — Biblioteca Ciudadana',
+    'centro_nombre' => 'LibrosBro — Biblioteca Ciudadana',
     'centro_direccion' => '',
     'centro_telefono' => '',
     'centro_email' => '',
