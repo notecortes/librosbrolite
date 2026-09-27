@@ -3289,6 +3289,48 @@ it('T-AUTH-PWD: Un usuario autenticado puede cambiar su contraseña tras hacer l
     assert_contains($rLoginOld['body'], 'Credenciales incorrectas', 'Login con clave antigua rechazado');
 });
 
+it('T-PORTADAS-BUSCADOR: Buscador interactivo de portadas en la red durante la edición de libros', function () {
+    // 1. Invitado no autenticado es redirigido o rechazado
+    $sGuest = new_session();
+    $rGuest = http_get('/admin/libros/buscar-portadas?titulo=El+principito', $sGuest);
+    assert_true(in_array($rGuest['code'], [302, 401, 403], true), 'Invitado no tiene acceso a la API de búsqueda de portadas');
+
+    // 2. Lector común (rol 3) no tiene permiso catalogo.editar (403)
+    $sUser = new_session();
+    http_get('/login', $sUser);
+    http_post('/login', ['email' => 'usuario@bookswap.local', 'password' => 'password'], $sUser);
+    $rUser = http_get('/admin/libros/buscar-portadas?titulo=El+principito', $sUser);
+    assert_equals(403, $rUser['code'], 'Lector común recibe 403 al intentar buscar portadas');
+
+    // 3. Admin / Personal puede consultar la API y recibe JSON con portadas
+    $sAdmin = new_session();
+    http_get('/login', $sAdmin);
+    http_post('/login', ['email' => 'admin@bookswap.local', 'password' => 'password'], $sAdmin);
+
+    // Comprobar que la vista de edición contiene el botón y el modal
+    $rVista = http_get('/admin/libros/editar?id=1', $sAdmin);
+    assert_equals(200, $rVista['code'], 'GET /admin/libros/editar?id=1 responde 200');
+    assert_contains($rVista['body'], 'btn-disparar-buscador-portadas', 'La vista contiene el botón para buscar portadas');
+    assert_contains($rVista['body'], 'modal-buscar-portadas', 'La vista incluye el modal interactivo de portadas');
+    assert_contains($rVista['body'], 'modal-grid-portadas', 'El modal incluye el contenedor de cuadrícula de portadas');
+
+    // 4. Consulta a la API con título y editorial
+    $qs = http_build_query([
+        'titulo'    => 'El principito',
+        'autor'     => 'Antoine de Saint-Exupéry',
+        'editorial' => 'Salamandra',
+        'isbn'      => '9788478887194'
+    ]);
+    $rApi = http_get('/admin/libros/buscar-portadas?' . $qs, $sAdmin);
+    assert_equals(200, $rApi['code'], 'API responde 200 para personal/admin');
+    $data = json_decode($rApi['body'], true);
+    assert_true(is_array($data), 'Respuesta de API es JSON válido');
+    assert_true(!empty($data['ok']), 'Campo ok es true');
+    assert_true(!empty($data['portadas']) && count($data['portadas']) > 0, 'Se devuelven portadas candidatas');
+    assert_true(isset($data['portadas'][0]['url']), 'Cada portada contiene url de imagen');
+    assert_true(isset($data['portadas'][0]['fuente']), 'Cada portada indica su fuente');
+});
+
 /* ─── 6. RESUMEN ─── */
 line("\n════════ RESUMEN ════════", 'cyan');
 line("  PASS: {$R['pass']}   FAIL: {$R['fail']}   SKIP: {$R['skip']}", $R['fail'] ? 'red' : 'green');

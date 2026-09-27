@@ -997,6 +997,30 @@ switch ($uriPath) {
         exit;
 
     // -------------------------------------------------------------
+    // API BÚSQUEDA MULTI-PORTADA (GOOGLE BOOKS + OPEN LIBRARY)
+    // -------------------------------------------------------------
+    case '/admin/libros/buscar-portadas':
+    case '/api/buscar-portadas':
+        exigir_permiso('catalogo.editar');
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+
+        $criterios = [
+            'titulo'    => (string) ($_GET['titulo'] ?? ($_POST['titulo'] ?? '')),
+            'autor'     => (string) ($_GET['autor'] ?? ($_POST['autor'] ?? '')),
+            'editorial' => (string) ($_GET['editorial'] ?? ($_POST['editorial'] ?? '')),
+            'isbn'      => (string) ($_GET['isbn'] ?? ($_POST['isbn'] ?? '')),
+            'anio'      => (string) ($_GET['anio'] ?? ($_POST['anio'] ?? '')),
+        ];
+
+        $res = catalogo_buscar_portadas_candidatas($criterios);
+        echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+
+    // -------------------------------------------------------------
     // GENERADOR DINÁMICO DE PORTADA SVG PLACEHOLDER LOCAL
     // -------------------------------------------------------------
     case '/portada-svg':

@@ -7,3 +7,7 @@ uploads/*
 !uploads/.htaccess
 docs/data.txt
 docs/datos.txt
+docs/libros_completo.csv
+docs/comoBorrarLibros.md
+.~lock.*
+*.lock

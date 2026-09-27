@@ -1028,3 +1028,232 @@ function catalogo_servir_portada_libro(PDO $pdo, int $libroId): void {
     exit;
 }
 
+/**
+ * Busca múltiples portadas alternativas en Open Library y Google Books a partir
+ * de los criterios proporcionados (título, autor, editorial, isbn, año).
+ * Prioriza las ediciones que coincidan con la editorial indicada.
+ *
+ * @param array $criterios ['titulo' => ..., 'autor' => ..., 'editorial' => ..., 'isbn' => ..., 'anio' => ...]
+ * @return array{ok: bool, total: int, portadas: array, mensaje?: string}
+ */
+function catalogo_buscar_portadas_candidatas(array $criterios): array {
+    $titulo = trim((string) ($criterios['titulo'] ?? ''));
+    $autor = trim((string) ($criterios['autor'] ?? ''));
+    $editorial = trim((string) ($criterios['editorial'] ?? ''));
+    $isbn = !empty($criterios['isbn']) ? preg_replace('/[^0-9X]/i', '', (string) $criterios['isbn']) : '';
+    $anio = !empty($criterios['anio']) ? trim((string) $criterios['anio']) : '';
+
+    if ($titulo === '' && $isbn === '') {
+        return [
+            'ok' => false,
+            'total' => 0,
+            'portadas' => [],
+            'mensaje' => 'Se requiere al menos el título o el ISBN para buscar portadas.',
+        ];
+    }
+
+    $portadas = [];
+    $urlsVistas = [];
+
+    // Helper para registrar un candidato evitando duplicados
+    $agregarCandidato = function(
+        string $urlL,
+        string $urlM,
+        string $t,
+        string $a,
+        string $ed,
+        string $an,
+        string $fuente,
+        bool $esMatchEditorial = false
+    ) use (&$portadas, &$urlsVistas, $editorial) {
+        $urlL = trim($urlL);
+        $urlM = trim($urlM) ?: $urlL;
+        if ($urlL === '' || isset($urlsVistas[$urlL])) {
+            return;
+        }
+        $urlsVistas[$urlL] = true;
+
+        $matchEd = $esMatchEditorial || ($editorial !== '' && $ed !== '' && stripos($ed, $editorial) !== false);
+
+        $portadas[] = [
+            'url' => $urlL,
+            'thumbnail' => $urlM,
+            'titulo' => $t,
+            'autor' => $a,
+            'editorial' => $ed,
+            'anio' => $an,
+            'fuente' => $fuente,
+            'coincide_editorial' => $matchEd,
+        ];
+    };
+
+    // 1. Si hay ISBN, comprobar portada directa en Open Library
+    if ($isbn !== '') {
+        $urlIsbnL = 'https://covers.openlibrary.org/b/isbn/' . $isbn . '-L.jpg?default=false';
+        $urlIsbnM = 'https://covers.openlibrary.org/b/isbn/' . $isbn . '-M.jpg?default=false';
+        $agregarCandidato(
+            $urlIsbnL,
+            $urlIsbnM,
+            $titulo ?: 'Edición ISBN',
+            $autor,
+            $editorial ?: 'Edición exacta',
+            $anio,
+            'Open Library (ISBN)',
+            true
+        );
+    }
+
+    // 2. Consulta a Google Books API (intitle, inauthor, inpublisher, isbn)
+    $googleKey = $_ENV['GOOGLE_BOOKS_API_KEY'] ?? getenv('GOOGLE_BOOKS_API_KEY') ?: '';
+    $gbParts = [];
+    if ($isbn !== '') {
+        $gbParts[] = 'isbn:' . $isbn;
+    }
+    if ($titulo !== '') {
+        $gbParts[] = 'intitle:' . mb_substr($titulo, 0, 80);
+    }
+    if ($autor !== '') {
+        $gbParts[] = 'inauthor:' . mb_substr($autor, 0, 50);
+    }
+    if ($editorial !== '') {
+        $gbParts[] = 'inpublisher:' . mb_substr($editorial, 0, 50);
+    }
+
+    if (!empty($gbParts)) {
+        $queryGb = implode(' ', $gbParts);
+        $urlGB = 'https://www.googleapis.com/books/v1/volumes?q=' . urlencode($queryGb) . '&maxResults=10' . ($googleKey ? '&key=' . urlencode($googleKey) : '');
+        $rawGb = catalogo_curl_get($urlGB, 4);
+        if ($rawGb) {
+            $dataGb = json_decode($rawGb, true);
+            foreach ($dataGb['items'] ?? [] as $item) {
+                $info = $item['volumeInfo'] ?? [];
+                $imgs = $info['imageLinks'] ?? [];
+                $thumb = $imgs['thumbnail'] ?? ($imgs['smallThumbnail'] ?? null);
+                if ($thumb) {
+                    $thumb = str_replace('http://', 'https://', (string) $thumb);
+                    $urlL = preg_replace('/&edge=curl/i', '', $thumb);
+                    $itemTit = (string) ($info['title'] ?? $titulo);
+                    $itemAut = implode(', ', $info['authors'] ?? ($autor ? [$autor] : []));
+                    $itemPub = (string) ($info['publisher'] ?? '');
+                    $itemDate = (string) ($info['publishedDate'] ?? '');
+                    $itemAnio = substr($itemDate, 0, 4);
+
+                    $agregarCandidato(
+                        $urlL,
+                        $thumb,
+                        $itemTit,
+                        $itemAut,
+                        $itemPub,
+                        $itemAnio,
+                        'Google Books'
+                    );
+                }
+            }
+        }
+    }
+
+    // 3. Consulta a Open Library Search API
+    if ($titulo !== '') {
+        $olParams = ['title' => $titulo];
+        if ($autor !== '') $olParams['author'] = $autor;
+        if ($editorial !== '') $olParams['publisher'] = $editorial;
+        if ($isbn !== '') $olParams['isbn'] = $isbn;
+
+        $urlOl = 'https://openlibrary.org/search.json?' . http_build_query($olParams) . '&limit=12';
+        $rawOl = catalogo_curl_get($urlOl, 5);
+        $workKeys = [];
+
+        if ($rawOl) {
+            $dataOl = json_decode($rawOl, true);
+            foreach ($dataOl['docs'] ?? [] as $doc) {
+                $coverI = $doc['cover_i'] ?? null;
+                $docTit = (string) ($doc['title'] ?? $titulo);
+                $docAut = (string) (($doc['author_name'] ?? [])[0] ?? $autor);
+                $docPub = (string) (($doc['publisher'] ?? [])[0] ?? '');
+                $docYear = (string) ($doc['first_publish_year'] ?? '');
+
+                if ($coverI) {
+                    $uL = 'https://covers.openlibrary.org/b/id/' . (int) $coverI . '-L.jpg';
+                    $uM = 'https://covers.openlibrary.org/b/id/' . (int) $coverI . '-M.jpg';
+                    $agregarCandidato($uL, $uM, $docTit, $docAut, $docPub, $docYear, 'Open Library');
+                }
+
+                if (!empty($doc['key']) && count($workKeys) < 2) {
+                    $workKeys[] = $doc['key'];
+                }
+            }
+        }
+
+        // Si la búsqueda con editorial devolvió pocas (< 5) y se había filtrado por editorial,
+        // buscar también de forma amplia (título + autor)
+        if (count($portadas) < 5 && $editorial !== '') {
+            $olBroadParams = ['title' => $titulo];
+            if ($autor !== '') $olBroadParams['author'] = $autor;
+            $urlBroad = 'https://openlibrary.org/search.json?' . http_build_query($olBroadParams) . '&limit=12';
+            $rawBroad = catalogo_curl_get($urlBroad, 5);
+            if ($rawBroad) {
+                $dataBroad = json_decode($rawBroad, true);
+                foreach ($dataBroad['docs'] ?? [] as $doc) {
+                    $coverI = $doc['cover_i'] ?? null;
+                    if ($coverI) {
+                        $docTit = (string) ($doc['title'] ?? $titulo);
+                        $docAut = (string) (($doc['author_name'] ?? [])[0] ?? $autor);
+                        $docPub = (string) (($doc['publisher'] ?? [])[0] ?? '');
+                        $docYear = (string) ($doc['first_publish_year'] ?? '');
+                        $uL = 'https://covers.openlibrary.org/b/id/' . (int) $coverI . '-L.jpg';
+                        $uM = 'https://covers.openlibrary.org/b/id/' . (int) $coverI . '-M.jpg';
+                        $agregarCandidato($uL, $uM, $docTit, $docAut, $docPub, $docYear, 'Open Library');
+                    }
+                    if (!empty($doc['key']) && count($workKeys) < 2) {
+                        $workKeys[] = $doc['key'];
+                    }
+                }
+            }
+        }
+
+        // 4. Consultar ediciones específicas de la obra en Open Library
+        foreach ($workKeys as $wk) {
+            $urlEditions = 'https://openlibrary.org' . $wk . '/editions.json?limit=25';
+            $rawEditions = catalogo_curl_get($urlEditions, 4);
+            if ($rawEditions) {
+                $dataEd = json_decode($rawEditions, true);
+                foreach ($dataEd['entries'] ?? [] as $entry) {
+                    if (empty($entry['covers'])) continue;
+                    $coverId = (int) $entry['covers'][0];
+                    if ($coverId <= 0) continue;
+
+                    $edTit = (string) ($entry['title'] ?? $titulo);
+                    $edPub = implode(', ', $entry['publishers'] ?? []);
+                    $edDate = (string) ($entry['publish_date'] ?? '');
+                    $uL = 'https://covers.openlibrary.org/b/id/' . $coverId . '-L.jpg';
+                    $uM = 'https://covers.openlibrary.org/b/id/' . $coverId . '-M.jpg';
+                    $agregarCandidato($uL, $uM, $edTit, $autor, $edPub, $edDate, 'Open Library (Edición)');
+                }
+            }
+        }
+    }
+
+    // Ordenar resultados: las que coincidan con la editorial solicitada primero
+    usort($portadas, function($a, $b) {
+        $matchA = !empty($a['coincide_editorial']);
+        $matchB = !empty($b['coincide_editorial']);
+        if ($matchA && !$matchB) return -1;
+        if (!$matchA && $matchB) return 1;
+        return 0;
+    });
+
+    return [
+        'ok' => true,
+        'total' => count($portadas),
+        'portadas' => $portadas,
+        'criterios' => [
+            'titulo' => $titulo,
+            'autor' => $autor,
+            'editorial' => $editorial,
+            'isbn' => $isbn,
+            'anio' => $anio,
+        ],
+    ];
+}
+
+

@@ -16,8 +16,10 @@ cd librosbrolite
 docker compose up -d --build
 
 # 3. Acceso a las aplicaciones en su navegador
-# Aplicación web principal:  http://localhost:6080
-# Gestor de base de datos:    http://localhost:8081 (usuario: root / pass: root)
+# Aplicación web principal:  http://localhost:8088
+# Gestor de base de datos:    http://localhost:8091
+#   - Usuario root:     root / root_secret_dev
+#   - Usuario app:      bookswap / bookswap_pass
 ```
 
 ---
