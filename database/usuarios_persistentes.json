@@ -1,0 +1,38 @@
+[
+    {
+        "id": 6,
+        "nombre": "alumno@alumno.com",
+        "email": "alumno@alumno.com",
+        "password_hash": "$2y$10$bZj7OkNULRUWXy3AF1Ed8.nVOa\/Y67SiW\/V6F63fs79hNrHxRF\/aG",
+        "rol_id": 3,
+        "activo": 1,
+        "auth_provider": "local",
+        "email_verificado": 1,
+        "fecha_registro": "2026-09-23 19:24:20",
+        "tokens_saldo": "6"
+    },
+    {
+        "id": 7,
+        "nombre": "Corto",
+        "email": "c_6ab827a85cc4c@b.local",
+        "password_hash": "$2y$10$qq.T2XOnEoeS\/OBQ60JayuudI\/rsFxNmGSpfwuxomt\/6Zn20JlPCa",
+        "rol_id": 3,
+        "activo": 1,
+        "auth_provider": "local",
+        "email_verificado": 1,
+        "fecha_registro": "2026-09-26 20:14:32",
+        "tokens_saldo": "0"
+    },
+    {
+        "id": 8,
+        "nombre": "pepe",
+        "email": "notecortes2@gmail.com",
+        "password_hash": "$2y$10$la10S5v8PslBMg.TQioCtOiSaYC6JwQiTF2vijH.vvf3maeCR\/N22",
+        "rol_id": 3,
+        "activo": 1,
+        "auth_provider": "local",
+        "email_verificado": 1,
+        "fecha_registro": "2026-09-26 21:52:01",
+        "tokens_saldo": "2"
+    }
+]

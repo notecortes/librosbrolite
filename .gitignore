@@ -1,0 +1,7 @@
+# .gitignore
+.env
+node_modules/
+.DS_Store
+backups/*.sql
+uploads/*
+!uploads/.htaccess
