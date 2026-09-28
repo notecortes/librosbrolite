@@ -18,9 +18,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
 <section class="hero p-4 p-md-5 mb-5 rounded-4 shadow-sm">
   <div class="row align-items-center g-4">
     <div class="col-lg-7">
-      <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
-        <i class="bi bi-geo-alt-fill me-1"></i> Punto de intercambio ciudadano
-      </span>
+      
       <h1 class="hero-titulo mb-3 fw-800 display-5">
         Comparte libros.<br>Gana <span class="text-primary">tokens</span>. Repite.
       </h1>
