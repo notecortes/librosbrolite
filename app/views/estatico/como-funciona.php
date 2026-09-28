@@ -80,6 +80,21 @@ $nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
     </div>
   </div>
 
+  <!-- Aviso especial: Catálogo cerrado -->
+  <div class="card border-0 bg-primary-subtle text-primary-emphasis rounded-4 p-4 mb-5 shadow-sm">
+    <div class="d-flex align-items-start gap-3">
+      <div class="p-2 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; min-width: 44px;">
+        <i class="bi bi-shield-exclamation fs-5"></i>
+      </div>
+      <div>
+        <h3 class="h5 fw-bold mb-1">Importante: ¿Qué libros se admiten para intercambio?</h3>
+        <p class="mb-0 small">
+          En <?= e($nombreCentro) ?> operamos bajo un <strong>catálogo cerrado</strong>: <strong>únicamente se admiten los libros que figuran en nuestro catálogo oficial</strong>. No se admite cualquier título ni libros que no formen parte de los fondos admitidos. Antes de traer tus libros al mostrador, por favor verifica en el buscador del catálogo que están registrados.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <!-- Mini-FAQ -->
   <div class="max-w-800 mx-auto mb-5" id="faq-como-funciona">
     <h2 class="h4 fw-800 text-center mb-4">Preguntas Frecuentes</h2>
@@ -92,7 +107,20 @@ $nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
         </h3>
         <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
           <div class="accordion-body text-muted small">
-            Consigues tokens trayendo libros que ya no uses al mostrador. Cada libro en buen estado que sea aceptado te otorgará tokens automáticamente en tu cuenta. Además, al registrarte recibes un bono inicial de bienvenida en tokens.
+            Consigues tokens únicamente cuando traes libros al mostrador. <strong>Atención: solo se admiten los títulos incluidos en nuestro catálogo de libros</strong> (no se acepta cualquier título al azar). Al registrarte no se otorga ningún bono de bienvenida; la única forma de obtener tokens es trayendo y depositando un libro catalogado que esté en buen estado.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item border-0 border-bottom">
+        <h3 class="accordion-header">
+          <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-admitidos">
+            ¿Puedo traer cualquier libro para intercambiar?
+          </button>
+        </h3>
+        <div id="faq-admitidos" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
+          <div class="accordion-body text-muted small">
+            <strong>No, no se admite cualquier libro.</strong> Solo se aceptan los títulos catalogados y aprobados en la plataforma. Si traes un ejemplar de un libro que no está en el catálogo, el mostrador no podrá aceptarlo para depósito ni bonificarlo con tokens.
           </div>
         </div>
       </div>
@@ -127,11 +155,8 @@ $nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
 
   <!-- CTA Inferior -->
   <div class="text-center py-4">
-    <a href="/catalogo" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm me-2 mb-2">
-      <i class="bi bi-book me-2"></i>Ver catálogo de libros
-    </a>
-    <a href="/visitanos" class="btn btn-outline-secondary btn-lg rounded-pill px-4 fw-semibold mb-2">
-      <i class="bi bi-geo-alt me-1"></i>Dónde encontrarnos
+    <a href="/catalogo" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm mb-2">
+      <i class="bi bi-book me-2"></i>Ver catálogo de libros admitidos
     </a>
   </div>
 </div>

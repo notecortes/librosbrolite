@@ -6,7 +6,7 @@
  * - Economía: coste_libro, bono_deposito, bono_bienvenida.
  * - Operativa: horas_reserva, max_reservas_activas.
  * - Backups: dias_backup_auto, retencion_backups.
- * - Datos del punto físico: centro_nombre, centro_direccion, centro_telefono, centro_email, centro_horario, centro_como_llegar, centro_mapa_lat, centro_mapa_lng, centro_mapa_proveedor.
+ * - Datos del punto físico: centro_nombre, centro_direccion, centro_telefono, centro_email.
  * - Integración Google OAuth: google_client_id, google_client_secret, google_redirect_uri.
  */
 declare(strict_types=1);
@@ -126,35 +126,6 @@ $config = $config ?? [];
                 <label class="form-label fw-bold small">Email oficial:</label>
                 <input type="email" name="centro_email" class="form-control" value="<?= e($config['centro_email'] ?? 'hola@bookswap.local') ?>" required>
               </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Horario semanal (JSON):</label>
-              <textarea name="centro_horario" rows="3" class="form-control font-monospace small"><?= e($config['centro_horario'] ?? '') ?></textarea>
-              <div class="form-text small">Formato JSON con tramos por día (lunes, martes, ..., domingo).</div>
-            </div>
-
-            <div class="row g-3 mb-3">
-              <div class="col-4">
-                <label class="form-label fw-bold small">Latitud GPS:</label>
-                <input type="text" name="centro_mapa_lat" class="form-control font-monospace" value="<?= e($config['centro_mapa_lat'] ?? '40.4168') ?>" required>
-              </div>
-              <div class="col-4">
-                <label class="form-label fw-bold small">Longitud GPS:</label>
-                <input type="text" name="centro_mapa_lng" class="form-control font-monospace" value="<?= e($config['centro_mapa_lng'] ?? '-3.7038') ?>" required>
-              </div>
-              <div class="col-4">
-                <label class="form-label fw-bold small">Proveedor mapa:</label>
-                <select name="centro_mapa_proveedor" class="form-select">
-                  <option value="google" <?= ($config['centro_mapa_proveedor'] ?? '') === 'google' ? 'selected' : '' ?>>Google Maps</option>
-                  <option value="osm" <?= ($config['centro_mapa_proveedor'] ?? '') === 'osm' ? 'selected' : '' ?>>OpenStreetMap</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Indicaciones de transporte (Cómo llegar):</label>
-              <textarea name="centro_como_llegar" rows="2" class="form-control"><?= e($config['centro_como_llegar'] ?? '') ?></textarea>
             </div>
           </div>
         </div>

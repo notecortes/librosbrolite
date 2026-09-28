@@ -910,11 +910,20 @@ switch ($uriPath) {
             catalogo_registrar_busqueda($pdo, $terminoBusq, $usuario ? (int) $usuario['id'] : null);
         }
 
+        $filtrado = isset($_GET['filtrado']);
+        if ($filtrado) {
+            $soloDisponibles = !empty($_GET['solo_disponibles']);
+        } elseif (isset($_GET['solo_disponibles'])) {
+            $soloDisponibles = !empty($_GET['solo_disponibles']);
+        } else {
+            $soloDisponibles = true;
+        }
+
         $filtros = [
             'q' => $terminoBusq,
             'genero' => $_GET['genero'] ?? '',
             'nivel' => $_GET['nivel'] ?? '',
-            'solo_disponibles' => !empty($_GET['solo_disponibles']),
+            'solo_disponibles' => $soloDisponibles,
         ];
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
         $datosCat = catalogo_listar_libros($pdo, $filtros, $pagina, 12);

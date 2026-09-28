@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function () {
         card.style.cursor = 'pointer';
         card.style.transition = 'all 0.2s ease-in-out';
 
-        // Ratio contenedor de la imagen
+        // Ratio contenedor de la imagen (sin capas oscuras encima)
         var ratioDiv = document.createElement('div');
         ratioDiv.className = 'ratio ratio-3x4 bg-light overflow-hidden';
 
@@ -371,32 +371,39 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         };
         ratioDiv.appendChild(img);
-
-        // Badge editorial si coincide
-        if (p.coincide_editorial) {
-          var badgeEd = document.createElement('span');
-          badgeEd.className = 'badge bg-success position-absolute top-0 start-0 m-2 shadow-xs';
-          badgeEd.innerHTML = '<i class="bi bi-check2 me-1"></i>Editorial coincidente';
-          ratioDiv.appendChild(badgeEd);
-        }
-
-        // Badge fuente (Google Books / Open Library)
-        var badgeSrc = document.createElement('span');
-        badgeSrc.className = 'badge bg-dark bg-opacity-75 position-absolute top-0 end-0 m-2 shadow-xs small';
-        badgeSrc.textContent = p.fuente;
-        ratioDiv.appendChild(badgeSrc);
-
         card.appendChild(ratioDiv);
 
         // Card body con detalles y botón
         var body = document.createElement('div');
         body.className = 'card-body p-2 d-flex flex-column';
 
-        var pEd = document.createElement('div');
-        pEd.className = 'small fw-bold text-truncate text-secondary mb-1';
+        // Fila con editorial y fuente
+        var rowMeta = document.createElement('div');
+        rowMeta.className = 'd-flex align-items-center justify-content-between gap-1 mb-1';
+
+        var pEd = document.createElement('span');
+        pEd.className = 'small fw-bold text-truncate text-secondary';
         pEd.title = p.editorial || 'Editorial no especificada';
         pEd.textContent = p.editorial ? p.editorial : 'Edición general';
-        body.appendChild(pEd);
+        rowMeta.appendChild(pEd);
+
+        if (p.fuente) {
+          var badgeSrc = document.createElement('span');
+          badgeSrc.className = 'badge bg-light text-muted border text-nowrap';
+          badgeSrc.style.fontSize = '0.68rem';
+          badgeSrc.textContent = p.fuente;
+          rowMeta.appendChild(badgeSrc);
+        }
+        body.appendChild(rowMeta);
+
+        // Badge editorial si coincide (en el cuerpo de la tarjeta, no sobre la imagen)
+        if (p.coincide_editorial) {
+          var badgeEd = document.createElement('div');
+          badgeEd.className = 'badge bg-success-subtle text-success border border-success-subtle align-self-start mb-1';
+          badgeEd.style.fontSize = '0.7rem';
+          badgeEd.innerHTML = '<i class="bi bi-check2 me-1"></i>Editorial coincidente';
+          body.appendChild(badgeEd);
+        }
 
         if (p.anio) {
           var pAn = document.createElement('div');

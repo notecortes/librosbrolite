@@ -54,7 +54,7 @@ $costeLibro = (int) ($config['coste_libro'] ?? 1);
         <i class="bi bi-lock-fill text-warning me-1"></i><strong><?= $tokComprometidos ?> 🪙 comprometidos en <?= $numResActivas ?> reserva(s) activa(s)</strong>
       </div>
       <p class="text-muted mb-0 small">
-        Cada reserva descuenta 1 🪙 hasta que la recoges o la anulas. Tráenos libros al mostrador para acumular más saldo.
+        Cada reserva descuenta 1 🪙 hasta que la recoges o la anulas. Tráenos libros al mostrador (<strong>recuerda: solo títulos admitidos en nuestro catálogo</strong>) para acumular más saldo.
       </p>
     </div>
     <div class="col-md-5 text-md-end">
@@ -177,7 +177,7 @@ $costeLibro = (int) ($config['coste_libro'] ?? 1);
       <div>
         <h2 class="h5 fw-bold text-dark mb-1">Deposita tus primeros libros para ganar tokens</h2>
         <p class="text-dark small mb-0">
-          Trae libros en buen estado a nuestro punto físico para recibir tokens y poder solicitar libros del catálogo.
+          Trae libros en buen estado incluidos en nuestro catálogo (<strong>solo se admiten títulos catalogados</strong>, no cualquier libro) a nuestro punto físico para recibir tokens y reservar nuevas lecturas.
         </p>
       </div>
     </div>

@@ -1081,11 +1081,10 @@ it('T-VISIT-01: página pública /visitanos renderiza centro_direccion y centro_
     assert_contains($r['body'], $tel, 'Contiene centro_telefono');
 });
 
-it('T-VISIT-02: iframe con coordenadas y enlace con google.com/maps/dir/?api=1&destination=', function () {
+it('T-VISIT-02: el plano/mapa iframe ha sido eliminado de la vista pública', function () {
     $r = http_get('/visitanos');
     assert_http_code(200, $r);
-    assert_contains($r['body'], '<iframe', 'Contiene elemento iframe');
-    assert_contains($r['body'], 'google.com/maps/dir/?api=1&destination=', 'Contiene enlace Cómo llegar');
+    assert_not_contains($r['body'], '<iframe', 'No contiene elemento iframe de mapa');
 });
 
 it('T-AUDIT-02: cambio de configuración auditado con valor_anterior y valor_nuevo', function () {
@@ -2321,7 +2320,7 @@ it('T-UX-01: Navbar por rol: invitado sin Mostrador/Panel; usuario con Mis reser
     // 1. Invitado
     $rGuest = http_get('/catalogo');
     assert_contains($rGuest['body'], 'Catálogo', 'Invitado ve Catálogo');
-    assert_contains($rGuest['body'], 'Visítanos', 'Invitado ve Visítanos');
+    assert_true(!str_contains($rGuest['body'], 'href="/visitanos"'), 'Invitado NO ve Visítanos en menú');
     assert_contains($rGuest['body'], 'Cómo funciona', 'Invitado ve Cómo funciona');
     assert_true(!str_contains($rGuest['body'], 'href="/mostrador"'), 'Invitado NO ve enlace a Mostrador');
     assert_true(!str_contains($rGuest['body'], 'href="/admin"'), 'Invitado NO ve enlace a Panel');

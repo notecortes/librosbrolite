@@ -23,7 +23,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
         Comparte libros.<br>Gana <span class="text-primary">tokens</span>. Repite.
       </h1>
       <p class="lead text-muted mb-4">
-        Trae tus libros leídos a nuestro punto físico, gana tokens por cada entrega y llévate nuevas lecturas. Todos los libros tienen un coste uniforme de <strong>🪙 <?= $costeLibro ?></strong> y los tokens <strong>nunca caducan</strong>.
+        Trae tus libros leídos a nuestro punto físico (<strong>únicamente se admiten los títulos incluidos en nuestro catálogo</strong>), gana tokens por cada entrega y llévate nuevas lecturas. Todos los libros tienen un coste uniforme de <strong>🪙 <?= $costeLibro ?></strong> y los tokens <strong>nunca caducan</strong>.
       </p>
       <div class="d-flex flex-wrap gap-3">
         <?php if ($usuario === null): ?>
@@ -35,8 +35,8 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
             <i class="bi bi-search me-1"></i> Explorar catálogo
           </a>
         <?php endif; ?>
-        <a class="btn btn-soft btn-lg px-4" href="/visitanos">
-          <i class="bi bi-compass me-1"></i> Dónde encontrarnos
+        <a class="btn btn-soft btn-lg px-4" href="/como-funciona">
+          <i class="bi bi-question-circle me-1"></i> Cómo funciona
         </a>
       </div>
     </div>
@@ -86,7 +86,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
         </div>
         <h3 class="h5 fw-bold mb-2">1. Deposita tus libros</h3>
         <p class="text-muted mb-0">
-          Trae los libros que ya no lees a nuestro mostrador físico. Comprobamos que estén en buen estado y recibes <strong>+<?= $bonoDeposito ?> token</strong> por cada uno.
+          Trae los libros que ya no lees a nuestro mostrador físico. <strong>Solo se admiten los títulos que figuran en nuestro catálogo</strong> (no se admite cualquier libro al azar). Comprobamos que estén en buen estado y recibes <strong>+<?= $bonoDeposito ?> token</strong> por cada uno.
         </p>
       </div>
     </div>
@@ -108,7 +108,7 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
         </div>
         <h3 class="h5 fw-bold mb-2">3. Recoge en mostrador</h3>
         <p class="text-muted mb-0">
-          Pasa por las instalaciones dentro del plazo y enseña el código de barras 1D de tu reserva. Paga con <strong>🪙 <?= $costeLibro ?> token</strong> o trayendo otro libro admitido.
+          Pasa por las instalaciones dentro del plazo y enseña el código de barras 1D de tu reserva. Paga con <strong>🪙 <?= $costeLibro ?> token</strong> o aportando otro libro admitido en el catálogo.
         </p>
       </div>
     </div>
@@ -169,19 +169,18 @@ $bonoDeposito = (int) ($config['bono_deposito'] ?? 1);
   </div>
 </section>
 
-<!-- 4. Llamada a visitarnos -->
+<!-- 4. Llamada al catálogo cerrado -->
 <section class="p-4 p-md-5 rounded-4 shadow-sm bg-surface border mb-4">
   <div class="row align-items-center g-4">
     <div class="col-md-8">
-      <h2 class="h4 fw-800 mb-2">Ven a visitarnos a nuestro espacio físico</h2>
+      <h2 class="h4 fw-800 mb-2"><i class="bi bi-shield-check text-primary me-2"></i>Catálogo cerrado: solo libros admitidos</h2>
       <p class="text-muted mb-0">
-        <?= e($config['centro_nombre'] ?? 'LibrosBro') ?> · <?= e($config['centro_direccion'] ?? 'Consulta nuestra ubicación') ?>.
-        Gestionamos las recogidas y los depósitos en persona para garantizar la mejor calidad en cada libro.
+        Para asegurar la calidad y rotación de los fondos en <?= e($config['centro_nombre'] ?? 'LibrosBro') ?>, <strong>únicamente se admiten para intercambio los libros incluidos en nuestro catálogo</strong> (no se admite cualquier título al azar). Revisa el catálogo antes de traer tus ejemplares al mostrador.
       </p>
     </div>
     <div class="col-md-4 text-md-end">
-      <a class="btn btn-primary px-4 py-2" href="/visitanos">
-        <i class="bi bi-geo-alt me-1"></i> Ver plano y horarios
+      <a class="btn btn-primary px-4 py-2" href="/catalogo">
+        <i class="bi bi-journal-bookmark me-1"></i> Consultar catálogo admitido
       </a>
     </div>
   </div>

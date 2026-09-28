@@ -1,8 +1,8 @@
 <?php
 /**
- * BookSwap · Vista Centro de Ayuda y Guía de Funcionalidades
+ * BookSwap · Vista Centro de Ayuda y Guía de Funcionalidades (v4.8)
  *
- * Muestra las características operativas del sistema con capturas de pantalla reales.
+ * Muestra las características operativas del sistema con capturas de pantalla reales actualizadas.
  * Filtra el contenido dinámicamente según el rol del usuario autenticado (Visitante, Lector, Personal, Admin)
  * para que cada usuario solo vea las características que puede utilizar.
  */
@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 $nombreCentro = $config['centro_nombre'] ?? 'LibrosBro';
 $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
+$vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/guest_home.png') ?: '4.8');
 ?>
 
 <div class="py-2">
@@ -43,7 +44,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
     <div class="alert alert-info border-info-subtle rounded-4 max-w-850 mx-auto mb-4 d-flex align-items-center gap-3">
       <i class="bi bi-info-circle-fill fs-3 text-info flex-shrink-0"></i>
       <div class="small">
-        <strong>Estás consultando la ayuda para visitantes.</strong> Aquí verás las funciones públicas.
+        <strong>Estás consultando la ayuda para visitantes.</strong> Aquí verás las funciones públicas y normas del catálogo.
         Para acceder a la reserva de libros, tu código de barras personal, tu saldo de tokens y las funciones del mostrador,
         <a href="/login" class="fw-bold alert-link">inicia sesión</a> o <a href="/registro" class="fw-bold alert-link">regístrate gratis</a>.
       </div>
@@ -68,7 +69,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
     <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
       <span class="input-group-text bg-surface border-0 ps-4 text-muted"><i class="bi bi-search"></i></span>
       <input type="text" id="helpSearchInput" class="form-control bg-surface border-0 fs-6 py-3"
-             placeholder="¿Qué funcionalidad estás buscando? (ej. escanear, reserva, saldo, csv...)"
+             placeholder="¿Qué funcionalidad estás buscando? (ej. escanear, reserva, saldo, portadas...)"
              onkeyup="buscarEnAyuda()">
       <button class="btn btn-soft px-4" type="button" onclick="limpiarBusquedaAyuda()" id="btnLimpiarBusqueda" style="display:none;">
         <i class="bi bi-x-lg"></i>
@@ -88,7 +89,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           <span class="badge bg-danger p-2 rounded-3 fs-5"><i class="bi bi-shield-shaded"></i></span>
           <div>
             <h2 class="h4 fw-bold mb-0 text-danger">Herramientas de Administración del Sistema</h2>
-            <p class="text-muted small mb-0">Gestión global de usuarios, roles, catálogo masivo y seguridad</p>
+            <p class="text-muted small mb-0">Gestión global de usuarios, roles, catálogo masivo, portadas y seguridad</p>
           </div>
         </div>
 
@@ -105,8 +106,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Supervisa en tiempo real el pulso de la biblioteca: reservas pendientes de entrega, ejemplares activos, lectores registrados y atajos directos a las tareas prioritarias del centro.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_dashboard.png', 'Panel Central de Métricas y Alertas')">
-                  <img src="/assets/img/ayuda/admin_dashboard.png" alt="Panel de Administración" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_dashboard.png?v=<?= $vAyuda ?>', 'Panel Central de Métricas y Alertas')">
+                  <img src="/assets/img/ayuda/admin_dashboard.png?v=<?= $vAyuda ?>" alt="Panel de Administración" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -118,19 +119,19 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           </div>
 
           <!-- Tarjeta 2: Gestión de Usuarios y Reseteo -->
-          <div class="col-lg-6 item-ayuda" data-keywords="usuarios roles clave password reset desactivar activar tokens alumnos profesores">
+          <div class="col-lg-6 item-ayuda" data-keywords="usuarios roles clave password reset desactivar activar tokens alumnos profesores borrado eliminar rgpd qr">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Usuarios y Accesos</span>
                 <span class="text-muted small"><i class="bi bi-people me-1"></i>/admin/usuarios</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Gestión de Usuarios y Recuperación Segura</h3>
+                <h3 class="h5 fw-bold mb-2">Gestión de Usuarios, QR In Situ y Borrado RGPD</h3>
                 <p class="text-muted small mb-3">
-                  Administra las cuentas de lectores y personal: modifica roles (Lector, Personal, Admin), desactiva usuarios inactivos, genera enlaces con código QR para restablecer claves in situ o elimina definitivamente cuentas e historiales liberando el correo para un nuevo alta.
+                  Administra las cuentas: modifica roles, desactiva accesos, genera enlaces de contraseña con código QR para escaneo presencial inmediato, o elimina definitivamente una cuenta y su historial completo liberando el email para un nuevo registro.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_usuarios.png', 'Gestión de Usuarios y Enlaces de Contraseña')">
-                  <img src="/assets/img/ayuda/admin_usuarios.png" alt="Gestión de Usuarios" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_usuarios.png?v=<?= $vAyuda ?>', 'Gestión de Usuarios y Enlaces de Contraseña')">
+                  <img src="/assets/img/ayuda/admin_usuarios.png?v=<?= $vAyuda ?>" alt="Gestión de Usuarios" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -153,8 +154,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Configura de forma visual y granular qué permisos tiene cada rol: asigna o revoca acceso a importaciones CSV, entregas de mostrador o auditoría, con salvaguarda de permisos base esenciales.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_roles.png', 'Matriz de Permisos RBAC')">
-                  <img src="/assets/img/ayuda/admin_roles.png" alt="Matriz de Permisos" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_roles.png?v=<?= $vAyuda ?>', 'Matriz de Permisos RBAC')">
+                  <img src="/assets/img/ayuda/admin_roles.png?v=<?= $vAyuda ?>" alt="Matriz de Permisos" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -165,7 +166,31 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 4: Importación Masiva CSV -->
+          <!-- Tarjeta 4: Buscador de Portadas en la Red -->
+          <div class="col-lg-6 item-ayuda" data-keywords="portadas buscar alternativas imagenes caratulas libros openlibrary googlebooks edicion">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
+              <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Catálogo Visual</span>
+                <span class="text-muted small"><i class="bi bi-image me-1"></i>/admin/libros/editar</span>
+              </div>
+              <div class="card-body px-4">
+                <h3 class="h5 fw-bold mb-2">Buscador Interactivo de Portadas Online</h3>
+                <p class="text-muted small mb-3">
+                  Durante la edición o alta de libros, pulsa <em>«Buscar portadas»</em> para consultar en vivo Open Library y Google Books. Muestra imágenes 100% limpias, detección de editorial coincidente y asignación directa con 1 clic.
+                </p>
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_buscar_portadas.png?v=<?= $vAyuda ?>', 'Buscador de Portadas en la Red')">
+                  <img src="/assets/img/ayuda/admin_buscar_portadas.png?v=<?= $vAyuda ?>" alt="Buscador de Portadas" class="img-fluid rounded-3 shadow-xs">
+                  <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                  <span class="small text-muted"><i class="bi bi-magic text-primary me-1"></i>Multi-fuente y nítido</span>
+                  <a href="/catalogo" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">Ver Catálogo <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 5: Importación Masiva CSV -->
           <div class="col-lg-6 item-ayuda" data-keywords="csv importar catalogo libros lotes excel carga masiva isbn">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
@@ -177,8 +202,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Sube cientos de títulos simultáneamente mediante archivos CSV normalizados. El sistema detecta títulos existentes, actualiza metadatos y crea los ejemplares físicos solicitados de forma atómica.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_csv.png', 'Importador Masivo CSV')">
-                  <img src="/assets/img/ayuda/admin_csv.png" alt="Importación CSV" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>', 'Importador Masivo CSV')">
+                  <img src="/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>" alt="Importación CSV" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -189,7 +214,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 5: Copias de Seguridad y Auditoría -->
+          <!-- Tarjeta 6: Copias de Seguridad y Auditoría -->
           <div class="col-lg-6 item-ayuda" data-keywords="backups copias seguridad base de datos descarga sql restauracion auditoria">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
@@ -201,8 +226,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Genera copias de seguridad de la base de datos SQL con un clic, mantén un historial ordenado y descárgalas de forma protegida contra accesos no autorizados mediante sanitización de rutas.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_backups.png', 'Copias de Seguridad y Respaldos')">
-                  <img src="/assets/img/ayuda/admin_backups.png" alt="Backups" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_backups.png?v=<?= $vAyuda ?>', 'Copias de Seguridad y Respaldos')">
+                  <img src="/assets/img/ayuda/admin_backups.png?v=<?= $vAyuda ?>" alt="Backups" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -243,8 +268,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Punto de atención con teclado virtual y soporte para pistola de código de barras. Detecta al instante si el código escaneado es una <strong>reserva (RES-*)</strong>, un <strong>ISBN de libro</strong> o el <strong>email de un lector</strong>.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_mostrador.png', 'Terminal de Mostrador y Escáner Universal')">
-                  <img src="/assets/img/ayuda/personal_mostrador.png" alt="Mostrador Universal" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>', 'Terminal de Mostrador y Escáner Universal')">
+                  <img src="/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>" alt="Mostrador Universal" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -265,10 +290,10 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Entrega Directa sin Reserva Previa</h3>
                 <p class="text-muted small mb-3">
-                  Permite a un alumno retirar un ejemplar directamente en ventanilla sin reserva web. Puede pagar con sus tokens acumulados o mediante <em>intercambio físico directo 1x1</em> aportando otro libro en el acto.
+                  Permite a un alumno retirar un ejemplar directamente en ventanilla sin reserva web. Puede pagar con sus tokens acumulados o mediante <em>intercambio físico directo 1x1</em> aportando otro libro admitido en el acto.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrega_directa.png', 'Entrega Directa en Mostrador')">
-                  <img src="/assets/img/ayuda/personal_entrega_directa.png" alt="Entrega Directa" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrega_directa.png?v=<?= $vAyuda ?>', 'Entrega Directa en Mostrador')">
+                  <img src="/assets/img/ayuda/personal_entrega_directa.png?v=<?= $vAyuda ?>" alt="Entrega Directa" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -280,19 +305,19 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           </div>
 
           <!-- Tarjeta 3: Entrada Unificada de Libros y Depósitos -->
-          <div class="col-lg-6 item-ayuda" data-keywords="entrada libros deposito donacion aportacion ejemplares lote acreditacion tokens lector">
+          <div class="col-lg-6 item-ayuda" data-keywords="entrada libros deposito donacion aportacion ejemplares lote acreditacion tokens lector admitidos">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Entrada de Libros</span>
                 <span class="text-muted small"><i class="bi bi-journal-plus me-1"></i>/libros/entrada</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Entrada Unificada de Libros y Acreditación</h3>
+                <h3 class="h5 fw-bold mb-2">Entrada Unificada de Libros y Depósitos</h3>
                 <p class="text-muted small mb-3">
-                  Recepción ágil de libros: escanea el ISBN, indica el número de copias y el depositante. El sistema crea las copias físicas, acredita automáticamente los tokens ganados al lector y notifica a quienes tenían el título en su lista de deseos.
+                  Recepción ágil de libros admitidos en el catálogo: escanea el ISBN, indica el número de copias y el depositante. El sistema crea las copias físicas, acredita automáticamente los tokens ganados al lector y notifica a la lista de deseos.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrada.png', 'Entrada Unificada de Libros')">
-                  <img src="/assets/img/ayuda/personal_entrada.png" alt="Entrada de Libros" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrada.png?v=<?= $vAyuda ?>', 'Entrada Unificada de Libros')">
+                  <img src="/assets/img/ayuda/personal_entrada.png?v=<?= $vAyuda ?>" alt="Entrada de Libros" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -315,8 +340,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Conoce la historia completa de cada copia física: quién la donó, qué lectores la han retirado, incidencias registradas y cambios de ubicación o condición (bueno, regular, desgastado).
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_trazabilidad.png', 'Línea de Vida y Trazabilidad del Ejemplar')">
-                  <img src="/assets/img/ayuda/personal_trazabilidad.png" alt="Trazabilidad del Ejemplar" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_trazabilidad.png?v=<?= $vAyuda ?>', 'Línea de Vida y Trazabilidad del Ejemplar')">
+                  <img src="/assets/img/ayuda/personal_trazabilidad.png?v=<?= $vAyuda ?>" alt="Trazabilidad del Ejemplar" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -340,7 +365,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           <span class="badge bg-primary text-white p-2 rounded-3 fs-5"><i class="bi bi-person-badge"></i></span>
           <div>
             <h2 class="h4 fw-bold mb-0 text-primary">Funcionalidades para Lectores y Estudiantes</h2>
-            <p class="text-muted small mb-0">Gestión de saldo, catálogo de libros, reservas con código de barras y avisos de stock</p>
+            <p class="text-muted small mb-0">Gestión de saldo, catálogo de libros, reservas con código de barras y cambio de clave</p>
           </div>
         </div>
 
@@ -355,10 +380,10 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Panel Personal y Saldo de Tokens</h3>
                 <p class="text-muted small mb-3">
-                  Tu centro de control lector: consulta tu saldo de tokens disponible, cuántos tokens tienes comprometidos en reservas activas y accede rápidamente a tus últimas lecturas y movimientos.
+                  Tu centro de control lector: consulta tu saldo de tokens disponible, tokens bloqueados en reservas activas y accede rápidamente a tus reservas y al botón de cambio de contraseña. Recuerda que los tokens se ganan aportando libros admitidos en el catálogo.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_dashboard.png', 'Panel Personal de Usuario y Saldo')">
-                  <img src="/assets/img/ayuda/usuario_dashboard.png" alt="Dashboard de Usuario" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_dashboard.png?v=<?= $vAyuda ?>', 'Panel Personal de Usuario y Saldo')">
+                  <img src="/assets/img/ayuda/usuario_dashboard.png?v=<?= $vAyuda ?>" alt="Dashboard de Usuario" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -369,8 +394,32 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 2: Catálogo y Reserva en 1 Clic -->
-          <div class="col-lg-6 item-ayuda" data-keywords="catalogo buscar libros reservar un clic disponibilidad genero autor">
+          <!-- Tarjeta 2: Cambio de Contraseña -->
+          <div class="col-lg-6 item-ayuda" data-keywords="password contrasena cambiar clave seguridad perfil cuenta login acceso">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
+              <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Seguridad de Cuenta</span>
+                <span class="text-muted small"><i class="bi bi-key me-1"></i>/cambiar-password</span>
+              </div>
+              <div class="card-body px-4">
+                <h3 class="h5 fw-bold mb-2">Cambio de Contraseña Personal</h3>
+                <p class="text-muted small mb-3">
+                  Actualiza tu clave de acceso en cualquier momento tras iniciar sesión. El formulario verifica tu contraseña actual y requiere un mínimo de 6 caracteres con confirmación antes de actualizar tu cuenta.
+                </p>
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_cambiar_password.png?v=<?= $vAyuda ?>', 'Cambio Seguro de Contraseña')">
+                  <img src="/assets/img/ayuda/usuario_cambiar_password.png?v=<?= $vAyuda ?>" alt="Cambiar Contraseña" class="img-fluid rounded-3 shadow-xs">
+                  <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                  <span class="small text-muted"><i class="bi bi-shield-lock text-success me-1"></i>Acceso directo en dashboard</span>
+                  <a href="/cambiar-password" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">Cambiar Clave <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Catálogo y Reserva en 1 Clic -->
+          <div class="col-lg-6 item-ayuda" data-keywords="catalogo buscar libros reservar un clic disponibilidad genero autor solo disponibles filtro">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Catálogo</span>
@@ -379,10 +428,10 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Exploración de Catálogo y Reserva Inmediata</h3>
                 <p class="text-muted small mb-3">
-                  Encuentra tu próxima lectura filtrando por título, autor o género. Si hay ejemplares disponibles, pulsa en <em>«Reservar ahora»</em> para apartarlo al instante bloqueando de forma segura 1 token de tu saldo durante 72 horas.
+                  Encuentra lecturas con el filtro destacado <strong>«Solo disponibles»</strong> activado por defecto. Pulsa en <em>«Reservar ahora»</em> para apartar tu copia al instante bloqueando 1 token de tu saldo durante 72 horas.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_catalogo.png', 'Catálogo de Libros y Reserva en 1 Clic')">
-                  <img src="/assets/img/ayuda/usuario_catalogo.png" alt="Catálogo de Libros" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_catalogo.png?v=<?= $vAyuda ?>', 'Catálogo de Libros y Reserva en 1 Clic')">
+                  <img src="/assets/img/ayuda/usuario_catalogo.png?v=<?= $vAyuda ?>" alt="Catálogo de Libros" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -393,7 +442,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 3: Mis Reservas y Código de Barras -->
+          <!-- Tarjeta 4: Mis Reservas y Código de Barras -->
           <div class="col-lg-6 item-ayuda" data-keywords="mis reservas codigo barras recogida mostrador comprobante cancelar">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
@@ -405,8 +454,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   Presenta tu pantalla en el mostrador para retirar el libro sin esperas. Cada reserva incluye un <strong>código de barras óptico 1D</strong> de alta compatibilidad y la opción de imprimir tu resguardo o cancelar la reserva para liberar tu token.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_reservas.png', 'Mis Reservas con Código de Barras')">
-                  <img src="/assets/img/ayuda/usuario_reservas.png" alt="Mis Reservas" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_reservas.png?v=<?= $vAyuda ?>', 'Mis Reservas con Código de Barras')">
+                  <img src="/assets/img/ayuda/usuario_reservas.png?v=<?= $vAyuda ?>" alt="Mis Reservas" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -417,7 +466,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 4: Lista de Deseos (Avisos de Stock) -->
+          <!-- Tarjeta 5: Lista de Deseos (Avisos de Stock) -->
           <div class="col-lg-6 item-ayuda" data-keywords="wishlist lista deseos avisos notificaciones disponibilidad agotados">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
@@ -429,8 +478,8 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
                 <p class="text-muted small mb-3">
                   ¿El libro que buscas está agotado? Pulsa en <em>«Avisarme cuando esté disponible»</em>. En cuanto otro lector o la biblioteca añadan una nueva copia, recibirás una notificación directa en tu campana para reservarlo antes de que se agote.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_wishlist.png', 'Lista de Deseos y Alertas de Disponibilidad')">
-                  <img src="/assets/img/ayuda/usuario_wishlist.png" alt="Lista de Deseos" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_wishlist.png?v=<?= $vAyuda ?>', 'Lista de Deseos y Alertas de Disponibilidad')">
+                  <img src="/assets/img/ayuda/usuario_wishlist.png?v=<?= $vAyuda ?>" alt="Lista de Deseos" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -441,7 +490,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
             </div>
           </div>
 
-          <!-- Tarjeta 5: Historial y Exportación CSV -->
+          <!-- Tarjeta 6: Historial y Exportación CSV -->
           <div class="col-lg-6 item-ayuda" data-keywords="historial lecturas libros aportados depositos transacciones exportar csv saldo">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
@@ -451,10 +500,10 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Historial de Lecturas y Movimientos</h3>
                 <p class="text-muted small mb-3">
-                  Comprueba cada libro retirado, devuelto o donado, junto a la variación exacta de tus tokens. Puedes filtrar por tipo de movimiento, rango de fechas y descargar tu informe personal en formato CSV.
+                  Comprueba cada libro retirado o depositado, junto a la variación exacta de tus tokens. Puedes filtrar por tipo de movimiento, rango de fechas y descargar tu informe personal en formato CSV.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_historial.png', 'Historial de Libros y Movimientos')">
-                  <img src="/assets/img/ayuda/usuario_historial.png" alt="Historial de Usuario" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_historial.png?v=<?= $vAyuda ?>', 'Historial de Libros y Movimientos')">
+                  <img src="/assets/img/ayuda/usuario_historial.png?v=<?= $vAyuda ?>" alt="Historial de Usuario" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -478,25 +527,25 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           <span class="badge bg-secondary text-white p-2 rounded-3 fs-5"><i class="bi bi-compass"></i></span>
           <div>
             <h2 class="h4 fw-bold mb-0 text-secondary">Acceso Público y Primeros Pasos</h2>
-            <p class="text-muted small mb-0">Exploración pública de libros, horarios de atención presencial y registro</p>
+            <p class="text-muted small mb-0">Exploración pública de libros, normas de intercambio presencial y catálogo admitido</p>
           </div>
         </div>
 
         <div class="row g-4">
           <!-- Tarjeta 1: Bienvenida e Intercambio Circular -->
-          <div class="col-lg-6 item-ayuda" data-keywords="inicio bienvenida intercambio circular libros como funciona visitante">
+          <div class="col-lg-6 item-ayuda" data-keywords="inicio bienvenida intercambio circular libros como funciona visitante catalogo cerrado libros admitidos">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Bienvenida</span>
                 <span class="text-muted small"><i class="bi bi-house me-1"></i>/</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Economía Circular y Donación de Libros</h3>
+                <h3 class="h5 fw-bold mb-2">Economía Circular y Catálogo Cerrado</h3>
                 <p class="text-muted small mb-3">
-                  LibrosBro transforma libros leídos que ya no se usan en créditos de lectura. Trae tus ejemplares al mostrador, recibe tokens y llévate nuevas historias para seguir leyendo.
+                  LibrosBro transforma libros que ya no usas en créditos de lectura. <strong>Importante:</strong> operamos con un catálogo cerrado (solo se admiten títulos catalogados en la plataforma, no cualquier libro). Al registrarte comienzas con 0 tokens; obtienes tokens al depositar libros admitidos en el mostrador.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_home.png', 'Página Principal de LibrosBro')">
-                  <img src="/assets/img/ayuda/guest_home.png" alt="Página de Inicio" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_home.png?v=<?= $vAyuda ?>', 'Página Principal de LibrosBro')">
+                  <img src="/assets/img/ayuda/guest_home.png?v=<?= $vAyuda ?>" alt="Página de Inicio" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -508,19 +557,19 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
           </div>
 
           <!-- Tarjeta 2: Consulta Pública de Fondos -->
-          <div class="col-lg-6 item-ayuda" data-keywords="catalogo publico consulta busqueda titulos biblioteca visitante">
+          <div class="col-lg-6 item-ayuda" data-keywords="catalogo publico consulta busqueda titulos biblioteca visitante solo disponibles filtro">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Consulta Abierta</span>
                 <span class="text-muted small"><i class="bi bi-journal-bookmark me-1"></i>/catalogo</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Consulta de Fondos Disponibles</h3>
+                <h3 class="h5 fw-bold mb-2">Consulta de Fondos y Filtro «Solo disponibles»</h3>
                 <p class="text-muted small mb-3">
-                  Cualquier visitante puede consultar en directo las portadas, sinopsis y número de ejemplares físicos disponibles en el centro antes de acercarse al mostrador o registrarse.
+                  Cualquier visitante puede consultar en directo las portadas y ejemplares disponibles. El filtro <strong>«Solo disponibles»</strong> aparece preseleccionado por defecto con una casilla muy visible para mostrar de inmediato qué libros están listos para retirar en el centro.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_catalogo.png', 'Consulta Pública del Catálogo')">
-                  <img src="/assets/img/ayuda/guest_catalogo.png" alt="Catálogo Público" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_catalogo.png?v=<?= $vAyuda ?>', 'Consulta Pública del Catálogo')">
+                  <img src="/assets/img/ayuda/guest_catalogo.png?v=<?= $vAyuda ?>" alt="Catálogo Público" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
@@ -542,7 +591,7 @@ $rolActual = $usuario['rol_nombre'] ?? 'INVITADO';
       <i class="bi bi-search fs-2"></i>
     </div>
     <h3 class="h5 fw-bold">No se encontraron funcionalidades</h3>
-    <p class="text-muted small mb-3">Intenta con otro término de búsqueda (ejemplo: reserva, saldo, mostrador, csv...)</p>
+    <p class="text-muted small mb-3">Intenta con otro término de búsqueda (ejemplo: reserva, saldo, mostrador, portadas, contraseña...)</p>
     <button class="btn btn-outline-primary btn-sm rounded-pill px-4" onclick="limpiarBusquedaAyuda()">Mostrar todo</button>
   </div>
 </div>

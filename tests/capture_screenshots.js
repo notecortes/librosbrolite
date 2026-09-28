@@ -64,6 +64,9 @@ async function capture() {
 
     await page.goto(`${BASE_URL}/mi-historial`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'usuario_historial.png') });
+
+    await page.goto(`${BASE_URL}/cambiar-password`, { waitUntil: 'networkidle2' });
+    await page.screenshot({ path: path.join(OUTPUT_DIR, 'usuario_cambiar_password.png') });
   }
 
   console.log('--- Capturando PERSONAL ---');
@@ -101,6 +104,16 @@ async function capture() {
 
     await page.goto(`${BASE_URL}/admin/backups`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'admin_backups.png') });
+
+    await page.goto(`${BASE_URL}/admin/libros/editar?id=1`, { waitUntil: 'networkidle2' });
+    try {
+      await page.waitForSelector('.btn-disparar-buscador-portadas', { timeout: 3000 });
+      await page.click('.btn-disparar-buscador-portadas');
+      await new Promise(r => setTimeout(r, 2500));
+      await page.screenshot({ path: path.join(OUTPUT_DIR, 'admin_buscar_portadas.png') });
+    } catch (e) {
+      console.log('No se pudo abrir modal portadas para screenshot:', e.message);
+    }
   }
 
   await browser.close();

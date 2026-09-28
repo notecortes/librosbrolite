@@ -33,11 +33,24 @@ $costeLibro = $config['coste_libro'] ?? '1';
     </div>
   </div>
 
+  <!-- Aviso informativo: Catálogo cerrado para intercambios -->
+  <div class="card border-0 bg-info-subtle text-info-emphasis rounded-4 p-3 mb-4 shadow-sm">
+    <div class="d-flex align-items-center gap-3">
+      <div class="p-2 bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+        <i class="bi bi-info-circle-fill fs-5"></i>
+      </div>
+      <div class="small">
+        <strong>¿Quieres traer libros para intercambiar?</strong> Recuerda que <strong>únicamente se admiten los títulos incluidos en este catálogo oficial</strong> (no se admite cualquier libro). Consulta aquí si tu ejemplar está registrado antes de traerlo al mostrador.
+      </div>
+    </div>
+  </div>
+
   <!-- Formulario de Búsqueda y Filtros -->
   <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-3 p-md-4">
       <form method="GET" action="/catalogo" class="row g-3 align-items-end">
-        <div class="col-12 col-md-5">
+        <input type="hidden" name="filtrado" value="1">
+        <div class="col-12 col-md-4">
           <label for="campo-q" class="form-label small fw-bold text-muted">Buscar por título, autor o ISBN</label>
           <div class="input-group">
             <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
@@ -59,12 +72,16 @@ $costeLibro = $config['coste_libro'] ?? '1';
           </select>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-2">
-          <div class="form-check pt-md-4">
-            <input class="form-check-input" type="checkbox" id="check-disponibles" name="solo_disponibles" value="1" 
-                   <?= !empty($filtros['solo_disponibles']) ? 'checked' : '' ?>>
-            <label class="form-check-label small fw-semibold" for="check-disponibles">
-              Solo disponibles
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-bold text-muted d-none d-md-block">&nbsp;</label>
+          <div class="p-2 px-3 rounded-3 border d-flex align-items-center gap-2 bg-body-tertiary shadow-xs"
+               style="min-height: 42px; border-width: 2px !important; border-color: var(--bs-border-color) !important; cursor: pointer;"
+               onclick="document.getElementById('check-disponibles').click();">
+            <input class="form-check-input m-0" type="checkbox" id="check-disponibles" name="solo_disponibles" value="1" 
+                   style="width: 1.45rem; height: 1.45rem; min-width: 1.45rem; cursor: pointer; border-width: 2px;"
+                   <?= !empty($filtros['solo_disponibles']) ? 'checked' : '' ?> onclick="event.stopPropagation();">
+            <label class="form-check-label small fw-bold mb-0 text-body" for="check-disponibles" style="cursor: pointer; user-select: none;">
+              <i class="bi bi-check2-circle text-success me-1"></i>Solo disponibles
             </label>
           </div>
         </div>
@@ -73,7 +90,7 @@ $costeLibro = $config['coste_libro'] ?? '1';
           <button type="submit" class="btn btn-primary w-100 fw-bold">
             <i class="bi bi-funnel me-1"></i>Filtrar
           </button>
-          <?php if (!empty($filtros['q']) || !empty($filtros['genero']) || !empty($filtros['solo_disponibles'])): ?>
+          <?php if (!empty($filtros['q']) || !empty($filtros['genero']) || empty($filtros['solo_disponibles'])): ?>
             <a href="/catalogo" class="btn btn-outline-secondary" title="Limpiar filtros">
               <i class="bi bi-x-lg"></i>
             </a>

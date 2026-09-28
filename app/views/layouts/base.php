@@ -87,9 +87,8 @@ unset($_SESSION['flash']);
       <div class="collapse navbar-collapse" id="navPrincipal">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
           <?php if (!$usuario): ?>
-            <!-- INVITADO: Catálogo · Visítanos · Cómo funciona -->
+            <!-- INVITADO: Catálogo · Cómo funciona · Ayuda -->
             <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
-            <li class="nav-item"><a class="nav-link" href="/visitanos"><i class="bi bi-geo-alt me-1"></i>Visítanos</a></li>
             <li class="nav-item"><a class="nav-link" href="/como-funciona"><i class="bi bi-question-circle me-1"></i>Cómo funciona</a></li>
             <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-info-circle me-1"></i>Ayuda</a></li>
           <?php elseif ($usuario['rol_nombre'] === 'USUARIO'): ?>
