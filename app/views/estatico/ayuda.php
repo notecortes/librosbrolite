@@ -237,6 +237,30 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
               </div>
             </div>
           </div>
+
+          <!-- Tarjeta 7: Gestión de Catálogo, Grupos, Idiomas y Bajas -->
+          <div class="col-lg-6 item-ayuda" data-keywords="catalogo libros alta editar baja eliminar reactivar grupos generos idiomas valenciano val cursos eso bachillerato">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
+              <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Gestión de Catálogo</span>
+                <span class="text-muted small"><i class="bi bi-book me-1"></i>/admin/libros</span>
+              </div>
+              <div class="card-body px-4">
+                <h3 class="h5 fw-bold mb-2">Alta, Clasificación por Grupos, Idiomas y Ciclo de Vida</h3>
+                <p class="text-muted small mb-3">
+                  Control absoluto del fondo: alta con asistente ISBN o manual, botones rápidos de cursos escolares (<em>1.º ESO, 2.º ESO, Bachillerato...</em>), soporte para <strong>Valencià (val)</strong>, Catalán, Castellano e idiomas europeos, así como <strong>retirada («Dar de baja»)</strong> con reembolso automático de tokens por reservas canceladas y opción de <strong>eliminación total</strong>.
+                </p>
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>', 'Gestión de Catálogo y Ciclo de Vida')">
+                  <img src="/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>" alt="Gestión de Catálogo" class="img-fluid rounded-3 shadow-xs">
+                  <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                  <span class="small text-muted"><i class="bi bi-tags text-success me-1"></i>Grupos, Val y Bajas</span>
+                  <a href="/catalogo" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">Ver Catálogo <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     <?php endif; ?>
@@ -351,6 +375,30 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
               </div>
             </div>
           </div>
+
+          <!-- Tarjeta 5: Alta en Catálogo y Cursos Escolares -->
+          <div class="col-lg-6 item-ayuda" data-keywords="alta catalogo mostrador accion 4 nuevos libros cursos eso bachillerato grupos idiomas valenciano val">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
+              <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Alta In Situ</span>
+                <span class="text-muted small"><i class="bi bi-journal-plus me-1"></i>/admin/libros/nuevo</span>
+              </div>
+              <div class="card-body px-4">
+                <h3 class="h5 fw-bold mb-2">Alta Rápida en Catálogo y Asignación de Curso</h3>
+                <p class="text-muted small mb-3">
+                  Accesible directamente desde la <strong>Acción 4 del Mostrador</strong> o la barra superior: registra nuevos títulos al vuelo con autocompletado ISBN, botones de 1 clic para cursos escolares prioritarios (<em>1.º ESO, 2.º ESO, etc.</em>), selector de idioma (incluyendo <strong>Valencià val</strong>) y creación opcional de su primera copia física.
+                </p>
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>', 'Alta Rápida en Catálogo')">
+                  <img src="/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>" alt="Alta Rápida en Catálogo" class="img-fluid rounded-3 shadow-xs">
+                  <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                  <span class="small text-muted"><i class="bi bi-plus-circle text-warning me-1"></i>Mostrador Acción 4</span>
+                  <a href="/admin/libros/nuevo" class="btn btn-warning text-dark btn-sm rounded-pill px-3 fw-bold">Nuevo Libro <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     <?php endif; ?>
@@ -428,7 +476,7 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Exploración de Catálogo y Reserva Inmediata</h3>
                 <p class="text-muted small mb-3">
-                  Encuentra lecturas con el filtro destacado <strong>«Solo disponibles»</strong> activado por defecto. Pulsa en <em>«Reservar ahora»</em> para apartar tu copia al instante bloqueando 1 token de tu saldo durante 72 horas.
+                  Encuentra lecturas con el buscador flexible y activa la casilla <strong>«Solo disponibles»</strong> cuando desees filtrar únicamente aquellos libros que cuentan con ejemplares físicos listos para retirar en el centro. Pulsa en <em>«Reservar ahora»</em> para apartar tu copia al instante bloqueando 1 token de tu saldo durante 72 horas.
                 </p>
                 <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/usuario_catalogo.png?v=<?= $vAyuda ?>', 'Catálogo de Libros y Reserva en 1 Clic')">
                   <img src="/assets/img/ayuda/usuario_catalogo.png?v=<?= $vAyuda ?>" alt="Catálogo de Libros" class="img-fluid rounded-3 shadow-xs">
@@ -566,7 +614,7 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Consulta de Fondos y Filtro «Solo disponibles»</h3>
                 <p class="text-muted small mb-3">
-                  Cualquier visitante puede consultar en directo las portadas y ejemplares disponibles. El filtro <strong>«Solo disponibles»</strong> aparece preseleccionado por defecto con una casilla muy visible para mostrar de inmediato qué libros están listos para retirar en el centro.
+                  Cualquier visitante puede consultar en directo las portadas y ejemplares disponibles. Puedes marcar la casilla <strong>«Solo disponibles»</strong> en cualquier momento para mostrar únicamente los títulos listos para préstamo presencial, o desmarcarla para explorar el histórico bibliográfico completo.
                 </p>
                 <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/guest_catalogo.png?v=<?= $vAyuda ?>', 'Consulta Pública del Catálogo')">
                   <img src="/assets/img/ayuda/guest_catalogo.png?v=<?= $vAyuda ?>" alt="Catálogo Público" class="img-fluid rounded-3 shadow-xs">

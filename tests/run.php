@@ -3330,6 +3330,199 @@ it('T-PORTADAS-BUSCADOR: Buscador interactivo de portadas en la red durante la e
     assert_true(isset($data['portadas'][0]['fuente']), 'Cada portada indica su fuente');
 });
 
+it('T-CAT-ELIMINAR: Borrado integral de libro, ejemplares, reservas activas con reembolso y wishlist', function () {
+    $pdo = db();
+    $adminId = (int) db_val("SELECT id FROM usuarios WHERE email = 'admin@bookswap.local'");
+    
+    // Crear lector aislado para la prueba
+    $emailTest = 'lector_del_' . uniqid() . '@bookswap.local';
+    $hash = password_hash('password123', PASSWORD_BCRYPT);
+    $pdo->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, auth_provider) VALUES ('Lector Test Del', ?, ?, 3, 1, 'local')")
+        ->execute([$emailTest, $hash]);
+    $userId = (int) $pdo->lastInsertId();
+
+    require_once ROOT . '/app/helpers/catalogo.php';
+    require_once ROOT . '/app/helpers/reservas.php';
+    require_once ROOT . '/app/helpers/wishlist.php';
+
+    // 1. Crear un libro de prueba
+    $libroId = catalogo_guardar_libro($pdo, [
+        'titulo' => 'Libro Para Eliminar ' . uniqid(),
+        'autor'  => 'Autor de Prueba',
+        'genero' => 'Pruebas',
+    ], $adminId);
+
+    // 2. Crear 2 ejemplares
+    $ej1 = catalogo_guardar_ejemplar($pdo, ['libro_id' => $libroId, 'estado' => 'disponible'], $adminId);
+    $ej2 = catalogo_guardar_ejemplar($pdo, ['libro_id' => $libroId, 'estado' => 'disponible'], $adminId);
+
+    // 3. Añadir a wishlist del usuario
+    wishlist_agregar($pdo, $userId, $libroId);
+
+    // 4. Asegurar saldo al usuario y crear reserva activa sobre el libro
+    ledger_registrar_movimiento($pdo, $userId, 5, 'ajuste', null, 'Saldo para test de borrado');
+    $saldoAntesRes = (int) db_val('SELECT COALESCE(SUM(cantidad), 0) FROM movimientos_tokens WHERE usuario_id = ?', [$userId]);
+    $resReserva = reserva_crear($pdo, $userId, $libroId);
+    assert_true(!empty($resReserva['codigo']), 'Reserva creada exitosamente con código');
+    $saldoConReserva = (int) db_val('SELECT COALESCE(SUM(cantidad), 0) FROM movimientos_tokens WHERE usuario_id = ?', [$userId]);
+    assert_equals($saldoAntesRes - 1, $saldoConReserva, 'Saldo descontó 1 token por la reserva');
+
+    // 5. Eliminar el libro
+    $resDel = catalogo_eliminar_libro($pdo, $libroId, $adminId);
+    assert_true($resDel['ok'], 'Borrado de libro devuelve ok=true');
+    assert_equals(2, $resDel['ejemplares_eliminados'], 'Se eliminaron 2 ejemplares físicos');
+    assert_equals(1, $resDel['reservas_canceladas'], 'Se canceló 1 reserva activa');
+
+    // 6. Comprobar que el libro y copias ya no existen en BD
+    $existeLibro = db_val('SELECT COUNT(*) FROM libros WHERE id = ?', [$libroId]);
+    assert_equals(0, (int) $existeLibro, 'El libro no existe en la tabla libros');
+    $existeEj = db_val('SELECT COUNT(*) FROM ejemplares WHERE libro_id = ?', [$libroId]);
+    assert_equals(0, (int) $existeEj, 'Los ejemplares físicos no existen en la BD');
+
+    // 7. Comprobar que wishlist se limpió
+    $existeWish = db_val('SELECT COUNT(*) FROM wishlist WHERE libro_id = ?', [$libroId]);
+    assert_equals(0, (int) $existeWish, 'Entradas de wishlist eliminadas');
+
+    // 8. Comprobar que el usuario recuperó su token
+    $saldoTrasBorrado = (int) db_val('SELECT COALESCE(SUM(cantidad), 0) FROM movimientos_tokens WHERE usuario_id = ?', [$userId]);
+    assert_equals($saldoAntesRes, $saldoTrasBorrado, 'El token fue devuelto al lector');
+
+    // 9. Comprobar notificación al lector
+    $notif = db_val("SELECT mensaje FROM notificaciones WHERE usuario_id = ? ORDER BY id DESC LIMIT 1", [$userId]);
+    assert_contains($notif, 'retirado del catálogo', 'El lector recibió notificación informativa');
+
+    // 10. Comprobar auditoría
+    $aud = db_val("SELECT accion FROM registro_auditoria WHERE accion = 'libro.eliminar' AND entidad_id = ? LIMIT 1", [$libroId]);
+    assert_equals('libro.eliminar', $aud, 'Auditoría registrada');
+});
+
+it('T-CAT-FILTROS-BONO: Solo disponibles desmarcado por defecto y alta de usuario sin bono de bienvenida', function () {
+    // 1. /catalogo no tiene check-disponibles marcado por defecto
+    $rCat = http_get('/catalogo');
+    assert_equals(200, $rCat['code'], 'GET /catalogo responde 200');
+    preg_match('/<input[^>]+id="check-disponibles"[^>]*>/', $rCat['body'], $matches);
+    assert_true(!empty($matches), 'Input check-disponibles encontrado en HTML');
+    assert_true(!str_contains($matches[0], 'checked'), 'El check de solo disponibles NO está marcado por defecto');
+
+    // 2. Alta de usuario desde admin inicia con 0 tokens exactos
+    $adminId = (int) db_val("SELECT id FROM usuarios WHERE email = 'admin@bookswap.local'");
+    $emailNuevo = 'nuevo_lector_' . uniqid() . '@bookswap.local';
+    require_once ROOT . '/app/helpers/admin.php';
+    $resNuevo = admin_usuario_crear(db(), 'Lector Sin Bono', $emailNuevo, 'password123', 3, null, $adminId);
+    assert_true($resNuevo['ok'], 'Usuario lector creado');
+    $nuevoUid = (int) $resNuevo['usuario_id'];
+
+    $saldoNuevo = (int) db_val('SELECT COALESCE(SUM(cantidad), 0) FROM movimientos_tokens WHERE usuario_id = ?', [$nuevoUid]);
+    assert_equals(0, $saldoNuevo, 'Nuevo usuario tiene 0 tokens (NO recibe bono de bienvenida)');
+});
+
+it('T-CAT-BAJA-GENEROS: Baja y reactivación de libro, y sugerencias de grupo / género priorizadas', function () {
+    $pdo = db();
+    $adminId = (int) db_val("SELECT id FROM usuarios WHERE email = 'admin@bookswap.local'");
+
+    // 1. Crear libro de prueba con género escolar
+    require_once ROOT . '/app/helpers/catalogo.php';
+    $libroId = catalogo_guardar_libro($pdo, [
+        'titulo' => 'Lengua Castellana y Literatura 1.º ESO Test',
+        'autor' => 'Editorial Anaya',
+        'genero' => '1.º ESO',
+        'idioma' => 'es',
+        'isbn13' => '9788469850000',
+    ], $adminId);
+
+    // Añadir 2 ejemplares
+    $ej1 = catalogo_guardar_ejemplar($pdo, ['libro_id' => $libroId, 'estado' => 'disponible', 'ubicacion' => 'A-01-01'], $adminId);
+    $ej2 = catalogo_guardar_ejemplar($pdo, ['libro_id' => $libroId, 'estado' => 'disponible', 'ubicacion' => 'A-01-02'], $adminId);
+
+    // Crear lector con token y reservar ej1
+    $emailLector = 'lector_baja_' . uniqid() . '@bookswap.local';
+    $pdo->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, email_verificado) VALUES ('Lector Baja Test', ?, 'hash', 3, 1, 1)")->execute([$emailLector]);
+    $userId = (int) $pdo->lastInsertId();
+    ledger_registrar_movimiento($pdo, $userId, 2, 'bono', null, 'Carga test');
+    require_once ROOT . '/app/helpers/reservas.php';
+    $resReserva = reserva_crear($pdo, $userId, $libroId, $ej1);
+    assert_true(!empty($resReserva['codigo']), 'Reserva activa creada para prueba de baja');
+
+    // 2. Dar de baja el libro completo
+    $resBaja = catalogo_dar_de_baja_libro($pdo, $libroId, 'Libro retirado por cambio de temario', $adminId);
+    assert_true($resBaja['ok'], 'Baja de libro devuelve ok=true');
+    assert_equals(2, $resBaja['copias_baja'], 'Se marcaron 2 copias en baja');
+    assert_equals(1, $resBaja['reservas_canceladas'], 'Se canceló 1 reserva activa');
+
+    // 3. Comprobar que el libro está en estado 'baja'
+    $estadoLibro = db_val('SELECT estado FROM libros WHERE id = ?', [$libroId]);
+    assert_equals('baja', $estadoLibro, 'El libro tiene estado baja');
+    $motivoLibro = db_val('SELECT motivo_baja FROM libros WHERE id = ?', [$libroId]);
+    assert_equals('Libro retirado por cambio de temario', $motivoLibro, 'El motivo de la baja quedó guardado');
+
+    // 4. Comprobar que los ejemplares están en estado 'baja'
+    $bajasEj = (int) db_val("SELECT COUNT(*) FROM ejemplares WHERE libro_id = ? AND estado = 'baja'", [$libroId]);
+    assert_equals(2, $bajasEj, 'Los 2 ejemplares pasaron a baja');
+
+    // 5. Comprobar que el lector recuperó su saldo
+    $saldoLector = (int) db_val('SELECT SUM(cantidad) FROM movimientos_tokens WHERE usuario_id = ?', [$userId]);
+    assert_equals(2, $saldoLector, 'El token bloqueado fue reembolsado al lector');
+
+    // 6. Comprobar que el libro NO aparece en /catalogo público
+    $rPub = http_get('/catalogo?q=' . urlencode('Lengua Castellana y Literatura 1.º ESO Test'));
+    assert_true(!str_contains($rPub['body'], '/libro/' . $libroId), 'Libro dado de baja no aparece en catálogo público');
+    assert_contains($rPub['body'], 'No se encontraron libros', 'Catálogo público indica que no hay resultados');
+
+    // 7. Reactivar el libro
+    $resReac = catalogo_reactivar_libro($pdo, $libroId, $adminId);
+    assert_true($resReac['ok'], 'Reactivación devuelve ok=true');
+    $estadoReac = db_val('SELECT estado FROM libros WHERE id = ?', [$libroId]);
+    assert_equals('activo', $estadoReac, 'El libro vuelve a estar activo');
+
+    // 8. Comprobar lista de géneros: 1.º ESO y grupos escolares están en las primeras posiciones
+    $listaGen = catalogo_obtener_lista_generos($pdo);
+    assert_true(in_array('1.º ESO', array_slice($listaGen, 0, 5), true), '1.º ESO está entre las primeras opciones de la lista');
+    assert_true(in_array('2.º ESO', array_slice($listaGen, 0, 5), true), '2.º ESO está entre las primeras opciones de la lista');
+
+    // 9. Comprobar formularios: etiquetado "Grupo / Género literario" presente
+    $sAdmin = login_como('admin');
+    $rNuevo = http_get('/admin/libros/nuevo', $sAdmin);
+    assert_contains($rNuevo['body'], 'Grupo / Género literario', 'Formulario de nuevo libro usa "Grupo / Género literario"');
+});
+
+it('T-CAT-IDIOMA-VAL: Soporte de Valencià (val) en formularios, API y ficha de libro', function () {
+    $pdo = db();
+    $adminId = (int) db_val("SELECT id FROM usuarios WHERE email = 'admin@bookswap.local'");
+    $sAdmin = login_como('admin');
+
+    // 1. Verificar opción en formulario de alta y edición
+    $rNuevo = http_get('/admin/libros/nuevo', $sAdmin);
+    assert_contains($rNuevo['body'], 'value="val"', 'Formulario nuevo libro incluye opción val');
+    assert_contains($rNuevo['body'], 'Valencià (val)', 'Formulario nuevo libro muestra texto Valencià (val)');
+
+    // 2. Normalización de idioma en catalogo_api
+    require_once ROOT . '/app/helpers/catalogo_api.php';
+    assert_equals('val', catalogo_normalizar_codigo_idioma('val'), 'Normaliza "val" a "val"');
+    assert_equals('val', catalogo_normalizar_codigo_idioma('valenciano'), 'Normaliza "valenciano" a "val"');
+    assert_equals('val', catalogo_normalizar_codigo_idioma('Valencià'), 'Normaliza "Valencià" a "val"');
+
+    // 3. Crear libro con idioma Valencià
+    require_once ROOT . '/app/helpers/catalogo.php';
+    $libroValId = catalogo_guardar_libro($pdo, [
+        'titulo' => 'Tirant lo Blanc Test Valencià',
+        'autor' => 'Joanot Martorell',
+        'genero' => '1.º Bachillerato',
+        'idioma' => 'val',
+        'isbn13' => '9788429700000',
+    ], $adminId);
+
+    $idiomaGuardado = db_val('SELECT idioma FROM libros WHERE id = ?', [$libroValId]);
+    assert_equals('val', $idiomaGuardado, 'El idioma del libro se guardó como val en la base de datos');
+
+    // 4. Formulario de edición muestra seleccionado Valencià (val)
+    $rEditar = http_get('/admin/libros/editar?id=' . $libroValId, $sAdmin);
+    assert_contains($rEditar['body'], 'value="val" selected', 'Formulario de edición selecciona Valencià (val)');
+
+    // 5. Ficha del libro muestra Valencià (val)
+    $rFicha = http_get('/libro/' . $libroValId);
+    assert_contains($rFicha['body'], 'Valencià (val)', 'Ficha del libro muestra Valencià (val)');
+});
+
 /* ─── 6. RESUMEN ─── */
 line("\n════════ RESUMEN ════════", 'cyan');
 line("  PASS: {$R['pass']}   FAIL: {$R['fail']}   SKIP: {$R['skip']}", $R['fail'] ? 'red' : 'green');

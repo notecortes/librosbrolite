@@ -192,17 +192,16 @@ $tabActivaInicial = (!empty($_GET['codigo']) || ($_GET['tab'] ?? '') === 'reserv
         <!-- 4) ALTA DE CATÁLOGO -->
         <?php if (puede('catalogo.editar')): ?>
         <div class="col-6" id="card-operacion-catalogo">
-          <button type="button"
-                  class="btn w-100 p-3 rounded-4 text-start h-100 transition-all border-2 btn-outline-secondary bg-surface"
-                  id="btn-tab-catalogo"
-                  onclick="activarOperacionMostrador('catalogo');">
+          <a href="/admin/libros/nuevo?retorno=/mostrador"
+             class="btn w-100 p-3 rounded-4 text-start h-100 transition-all border-2 btn-outline-secondary bg-surface d-block text-decoration-none text-body"
+             id="btn-tab-catalogo">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="fs-4">📚</span>
               <span class="badge bg-info-subtle text-info-emphasis rounded-pill small">Al vuelo</span>
             </div>
             <div class="fw-bold fs-6 mb-1">4. Alta de Catálogo</div>
             <div class="small opacity-75">ISBN, CSV o nuevo título</div>
-          </button>
+          </a>
         </div>
         <?php endif; ?>
       </div>
@@ -1045,9 +1044,9 @@ var estadoDirecta = {
  * @param {string} operacion Clave de la operación ('directa', 'reserva', 'deposito', 'catalogo')
  */
 function activarOperacionMostrador(operacion) {
-    var tabs = ['directa', 'reserva', 'deposito', 'catalogo'];
+    var tabs = ['directa', 'reserva'];
     tabs.forEach(function (tab) {
-        var panel = document.getElementById('sec-' + (tab === 'directa' ? 'entrega-directa' : (tab === 'reserva' ? 'entregar-reserva' : (tab === 'deposito' ? 'registrar-deposito' : 'alta-catalogo'))));
+        var panel = document.getElementById('sec-' + (tab === 'directa' ? 'entrega-directa' : 'entregar-reserva'));
         var btn = document.getElementById('btn-tab-' + tab);
         if (panel) {
             if (tab === operacion) {
@@ -1056,7 +1055,7 @@ function activarOperacionMostrador(operacion) {
                 panel.classList.add('d-none');
             }
         }
-        if (btn) {
+        if (btn && btn.tagName === 'BUTTON') {
             if (tab === operacion) {
                 btn.className = 'btn w-100 p-3 rounded-4 text-start h-100 transition-all border-2 btn-primary shadow border-primary text-white';
             } else {

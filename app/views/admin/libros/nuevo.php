@@ -107,11 +107,12 @@ if (empty($libroPrevio['isbn13']) && !empty($_GET['isbn'])) {
               <label for="campo-idioma" class="form-label small fw-bold">Idioma</label>
               <select id="campo-idioma" name="idioma" class="form-select">
                 <option value="es" <?= ($libroPrevio['idioma'] ?? 'es') === 'es' ? 'selected' : '' ?>>Español (es)</option>
+                <option value="val" <?= ($libroPrevio['idioma'] ?? '') === 'val' ? 'selected' : '' ?>>Valencià (val)</option>
+                <option value="ca" <?= ($libroPrevio['idioma'] ?? '') === 'ca' ? 'selected' : '' ?>>Catalán (ca)</option>
                 <option value="en" <?= ($libroPrevio['idioma'] ?? '') === 'en' ? 'selected' : '' ?>>Inglés (en)</option>
                 <option value="fr" <?= ($libroPrevio['idioma'] ?? '') === 'fr' ? 'selected' : '' ?>>Francés (fr)</option>
                 <option value="de" <?= ($libroPrevio['idioma'] ?? '') === 'de' ? 'selected' : '' ?>>Alemán (de)</option>
                 <option value="it" <?= ($libroPrevio['idioma'] ?? '') === 'it' ? 'selected' : '' ?>>Italiano (it)</option>
-                <option value="ca" <?= ($libroPrevio['idioma'] ?? '') === 'ca' ? 'selected' : '' ?>>Catalán (ca)</option>
                 <option value="gl" <?= ($libroPrevio['idioma'] ?? '') === 'gl' ? 'selected' : '' ?>>Gallego (gl)</option>
                 <option value="eu" <?= ($libroPrevio['idioma'] ?? '') === 'eu' ? 'selected' : '' ?>>Euskera (eu)</option>
               </select>
@@ -145,25 +146,45 @@ if (empty($libroPrevio['isbn13']) && !empty($_GET['isbn'])) {
                      placeholder="Ej: Sudamericana" value="<?= e($libroPrevio['editorial'] ?? '') ?>">
             </div>
 
-            <!-- Género literario -->
+            <!-- Grupo / Género literario -->
             <div class="col-12 col-sm-6">
-              <label for="campo-genero" class="form-label small fw-bold">Género literario</label>
-              <input type="text" id="campo-genero" name="genero" class="form-control" list="lista-generos"
-                     placeholder="Ej: Novela, Clásicos, Fantasía..." value="<?= e($libroPrevio['genero'] ?? '') ?>">
+              <label for="campo-genero" class="form-label small fw-bold">Grupo / Género literario</label>
+              <div class="input-group">
+                <input type="text" id="campo-genero" name="genero" class="form-control" list="lista-generos"
+                       placeholder="Ej: 1.º ESO, 2.º ESO, Novela, Clásicos..." value="<?= e($libroPrevio['genero'] ?? '') ?>" autocomplete="off">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Ver opciones frecuentes"></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="max-height: 320px; overflow-y: auto; min-width: 260px;">
+                  <li class="dropdown-header text-uppercase fw-bold text-primary small px-2 py-1"><i class="bi bi-mortarboard me-1"></i>Grupos escolares</li>
+                  <?php 
+                    $escolaresComunes = ['1.º ESO', '2.º ESO', '3.º ESO', '4.º ESO', '1.º Bachillerato', '2.º Bachillerato', 'FP Básica', 'Ciclos Formativos'];
+                    foreach ($escolaresComunes as $esc): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($esc) ?>"><?= e($esc) ?></button></li>
+                  <?php endforeach; ?>
+                  <li><hr class="dropdown-divider my-1"></li>
+                  <li class="dropdown-header text-uppercase fw-bold text-secondary small px-2 py-1"><i class="bi bi-book me-1"></i>Todos los grupos y géneros</li>
+                  <?php 
+                    $otrosOpciones = array_diff($generosExistentes ?? [], $escolaresComunes);
+                    foreach ($otrosOpciones as $gen): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($gen) ?>"><?= e($gen) ?></button></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
               <datalist id="lista-generos">
-                <option value="Novela">
-                <option value="Clásicos">
-                <option value="Fantasía">
-                <option value="Ciencia ficción">
-                <option value="Distopía">
-                <option value="Novela negra">
-                <option value="Infantil">
-                <option value="Juvenil">
-                <option value="Poesía">
-                <option value="Ensayo">
-                <option value="Historia">
-                <option value="Biografía">
+                <?php foreach (($generosExistentes ?? []) as $gen): ?>
+                  <option value="<?= e($gen) ?>">
+                <?php endforeach; ?>
               </datalist>
+              <div class="mt-2 d-flex flex-wrap align-items-center gap-1">
+                <span class="text-muted small me-1" style="font-size: 0.78rem;">Frecuentes:</span>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º ESO">1.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º ESO">2.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="3.º ESO">3.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="4.º ESO">4.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º Bachillerato">1.º Bach</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º Bachillerato">2.º Bach</button>
+              </div>
             </div>
 
             <!-- URL o ruta de la Portada -->
@@ -425,8 +446,25 @@ document.addEventListener('DOMContentLoaded', function () {
       visorCamara.classList.add('d-none');
       textoBtnCamara.textContent = 'Activar escáner de cámara';
       if (btnCamara) btnCamara.classList.replace('btn-outline-danger', 'btn-outline-primary');
-      scannerActivo = false;
     }
   };
+
+  // Selección rápida de grupo o género
+  var inputGen = document.getElementById('campo-genero');
+  if (inputGen) {
+    inputGen.addEventListener('focus', function () { this.select(); });
+    inputGen.addEventListener('click', function () { this.select(); });
+  }
+  document.querySelectorAll('.btn-opcion-genero').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var val = this.getAttribute('data-valor');
+      if (inputGen && val) {
+        inputGen.value = val;
+        inputGen.focus();
+        inputGen.dispatchEvent(new Event('change'));
+      }
+    });
+  });
 });
 </script>

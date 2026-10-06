@@ -41,7 +41,7 @@ $total = (int) ($total ?? 0);
           <div class="input-group">
             <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input type="text" name="q" class="form-control border-start-0" 
-                   placeholder="Buscar por título, autor, género o ISBN..." 
+                   placeholder="Buscar por título, autor, grupo/género o ISBN..." 
                    value="<?= e($filtros['q'] ?? '') ?>">
           </div>
         </div>
@@ -66,9 +66,9 @@ $total = (int) ($total ?? 0);
               <th scope="col" style="width: 60px;">Portada</th>
               <th scope="col">Título y Autor</th>
               <th scope="col">ISBN-13</th>
-              <th scope="col">Género</th>
+              <th scope="col">Grupo / Género</th>
               <th scope="col" class="text-center">Ejemplares</th>
-              <th scope="col" class="text-end" style="width: 180px;">Acciones</th>
+              <th scope="col" class="text-end" style="width: 210px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -113,9 +113,14 @@ $total = (int) ($total ?? 0);
                          onerror="this.onerror=null; this.src=this.dataset.fallback;">
                   </td>
                   <td>
-                    <a href="/libro/<?= (int) $l['id'] ?>" class="fw-bold text-body text-decoration-none d-block">
-                      <?= e($l['titulo']) ?>
-                    </a>
+                    <div class="d-flex align-items-center gap-1">
+                      <a href="/libro/<?= (int) $l['id'] ?>" class="fw-bold text-body text-decoration-none">
+                        <?= e($l['titulo']) ?>
+                      </a>
+                      <?php if (($l['estado'] ?? 'activo') === 'baja'): ?>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle small px-2 py-0" style="font-size: 0.72rem;">Baja</span>
+                      <?php endif; ?>
+                    </div>
                     <span class="small text-muted"><?= e($l['autor']) ?> <?= !empty($l['anio']) ? '(' . e((string)$l['anio']) . ')' : '' ?></span>
                   </td>
                   <td>
@@ -165,6 +170,27 @@ $total = (int) ($total ?? 0);
                       <a href="/libro/<?= (int) $l['id'] ?>" class="btn btn-outline-primary" title="Ver ficha del libro">
                         <i class="bi bi-eye"></i>
                       </a>
+                      <?php if (($l['estado'] ?? 'activo') === 'baja'): ?>
+                        <button type="button" class="btn btn-outline-success" title="Reactivar libro"
+                                data-bs-toggle="modal" data-bs-target="#modalReactivarLibroIndex"
+                                data-libro-id="<?= (int) $l['id'] ?>"
+                                data-libro-titulo="<?= e($l['titulo']) ?>">
+                          <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                      <?php else: ?>
+                        <button type="button" class="btn btn-outline-warning" title="Dar de baja libro"
+                                data-bs-toggle="modal" data-bs-target="#modalBajaLibroIndex"
+                                data-libro-id="<?= (int) $l['id'] ?>"
+                                data-libro-titulo="<?= e($l['titulo']) ?>">
+                          <i class="bi bi-slash-circle"></i>
+                        </button>
+                      <?php endif; ?>
+                      <button type="button" class="btn btn-outline-danger" title="Eliminar del catálogo"
+                              data-bs-toggle="modal" data-bs-target="#modalEliminarLibroIndex"
+                              data-libro-id="<?= (int) $l['id'] ?>"
+                              data-libro-titulo="<?= e($l['titulo']) ?>">
+                        <i class="bi bi-trash3"></i>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -196,3 +222,152 @@ $total = (int) ($total ?? 0);
     <?php endif; ?>
   </div>
 </div>
+
+<!-- Modal: Confirmar Eliminación de Libro (Index) -->
+<div class="modal fade" id="modalEliminarLibroIndex" tabindex="-1" aria-labelledby="modalEliminarLibroIndexLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/eliminar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" id="eliminarLibroId" value="">
+        <input type="hidden" name="retorno" value="/admin/libros">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-danger" id="modalEliminarLibroIndexLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Estás seguro de que deseas eliminar permanentemente el libro <strong id="eliminarLibroTitulo" class="text-body"></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-0">
+            <ul class="mb-0 ps-3">
+              <li>Se eliminarán todas sus copias físicas y registros del catálogo.</li>
+              <li>Si existen <strong>reservas activas</strong>, se cancelarán automáticamente y se reembolsarán los tokens bloqueados a los lectores con notificación.</li>
+              <li>Esta acción no se puede deshacer.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-bold">
+            <i class="bi bi-trash3 me-1"></i>Sí, Eliminar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Baja de Libro (Index) -->
+<div class="modal fade" id="modalBajaLibroIndex" tabindex="-1" aria-labelledby="modalBajaLibroIndexLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/baja">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" id="bajaLibroId" value="">
+        <input type="hidden" name="retorno" value="/admin/libros">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-warning-emphasis" id="modalBajaLibroIndexLabel">
+            <i class="bi bi-slash-circle me-2 text-warning"></i>Dar de Baja Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Confirmas la baja del libro <strong id="bajaLibroTitulo" class="text-body"></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-3">
+            <ul class="mb-0 ps-3">
+              <li>El libro pasará al estado <code>baja</code> y dejará de ofrecerse en búsquedas públicas.</li>
+              <li>Todas sus copias físicas asociadas se marcarán en estado <code>baja</code>.</li>
+              <li>Si existen <strong>reservas activas pendientes</strong>, se cancelarán de inmediato y se devolverán los tokens bloqueados a los lectores con notificación.</li>
+            </ul>
+          </div>
+          <div class="mb-2">
+            <label for="motivo-baja-libro-index" class="form-label small fw-bold">Motivo de la baja (obligatorio):</label>
+            <textarea id="motivo-baja-libro-index" name="motivo" class="form-control" rows="3" required
+                      placeholder="Ej: Retirado del currículo escolar, libros obsoletos, extraviados o deteriorados..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-bold text-dark">
+            <i class="bi bi-slash-circle me-1"></i>Confirmar Baja
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reactivar Libro (Index) -->
+<div class="modal fade" id="modalReactivarLibroIndex" tabindex="-1" aria-labelledby="modalReactivarLibroIndexLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/reactivar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" id="reactivarLibroId" value="">
+        <input type="hidden" name="retorno" value="/admin/libros">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-success" id="modalReactivarLibroIndexLabel">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reactivar Libro en el Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            El libro <strong id="reactivarLibroTitulo" class="text-body"></strong> volverá a estar en estado <code>activo</code> en el catálogo. Podrás incorporar nuevos ejemplares o reactivar los existentes cuando lo desees.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success fw-bold">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var modalDel = document.getElementById('modalEliminarLibroIndex');
+  if (modalDel) {
+    modalDel.addEventListener('show.bs.modal', function(event) {
+      var btn = event.relatedTarget;
+      if (btn) {
+        document.getElementById('eliminarLibroId').value = btn.getAttribute('data-libro-id') || '';
+        document.getElementById('eliminarLibroTitulo').textContent = btn.getAttribute('data-libro-titulo') || '';
+      }
+    });
+  }
+
+  var modalBaja = document.getElementById('modalBajaLibroIndex');
+  if (modalBaja) {
+    modalBaja.addEventListener('show.bs.modal', function(event) {
+      var btn = event.relatedTarget;
+      if (btn) {
+        document.getElementById('bajaLibroId').value = btn.getAttribute('data-libro-id') || '';
+        document.getElementById('bajaLibroTitulo').textContent = btn.getAttribute('data-libro-titulo') || '';
+      }
+    });
+  }
+
+  var modalReac = document.getElementById('modalReactivarLibroIndex');
+  if (modalReac) {
+    modalReac.addEventListener('show.bs.modal', function(event) {
+      var btn = event.relatedTarget;
+      if (btn) {
+        document.getElementById('reactivarLibroId').value = btn.getAttribute('data-libro-id') || '';
+        document.getElementById('reactivarLibroTitulo').textContent = btn.getAttribute('data-libro-titulo') || '';
+      }
+    });
+  }
+});
+</script>

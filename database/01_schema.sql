@@ -55,10 +55,14 @@ CREATE TABLE libros (
   idioma          VARCHAR(10) NOT NULL DEFAULT 'es',
   portada_url     VARCHAR(500) NULL,                       -- URL o NULL ⇒ placeholder SVG
   observaciones   VARCHAR(500) NULL,
+  estado          ENUM('activo','baja') NOT NULL DEFAULT 'activo',
+  motivo_baja     VARCHAR(255) NULL,
+  fecha_baja      DATETIME NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_libros_titulo (titulo),
   INDEX idx_libros_autor  (autor),
-  INDEX idx_libros_genero (genero)
+  INDEX idx_libros_genero (genero),
+  INDEX idx_libros_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE ejemplares (

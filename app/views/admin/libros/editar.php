@@ -61,6 +61,21 @@ $id = (int) ($libro['id'] ?? 0);
     <div class="col-12 col-lg-8">
       <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
+          <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+            <div class="alert alert-danger rounded-4 d-flex align-items-center mb-4">
+              <i class="bi bi-slash-circle-fill fs-3 me-3 text-danger"></i>
+              <div>
+                <strong class="d-block">Este libro está dado de baja del catálogo</strong>
+                <?php if (!empty($libro['motivo_baja'])): ?>
+                  <span class="small d-block"><strong>Motivo:</strong> <?= e($libro['motivo_baja']) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($libro['fecha_baja'])): ?>
+                  <span class="small text-muted d-block">Fecha: <?= e(date('d/m/Y H:i', strtotime($libro['fecha_baja']))) ?></span>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+
           <form method="POST" action="/admin/libros/editar" id="form-libro-editar" class="row g-3">
             <?= csrf_campo() ?>
             <input type="hidden" name="id" value="<?= $id ?>">
@@ -75,11 +90,12 @@ $id = (int) ($libro['id'] ?? 0);
               <label for="campo-idioma" class="form-label small fw-bold">Idioma</label>
               <select id="campo-idioma" name="idioma" class="form-select">
                 <option value="es" <?= ($libro['idioma'] ?? 'es') === 'es' ? 'selected' : '' ?>>Español (es)</option>
+                <option value="val" <?= ($libro['idioma'] ?? '') === 'val' ? 'selected' : '' ?>>Valencià (val)</option>
+                <option value="ca" <?= ($libro['idioma'] ?? '') === 'ca' ? 'selected' : '' ?>>Catalán (ca)</option>
                 <option value="en" <?= ($libro['idioma'] ?? '') === 'en' ? 'selected' : '' ?>>Inglés (en)</option>
                 <option value="fr" <?= ($libro['idioma'] ?? '') === 'fr' ? 'selected' : '' ?>>Francés (fr)</option>
                 <option value="de" <?= ($libro['idioma'] ?? '') === 'de' ? 'selected' : '' ?>>Alemán (de)</option>
                 <option value="it" <?= ($libro['idioma'] ?? '') === 'it' ? 'selected' : '' ?>>Italiano (it)</option>
-                <option value="ca" <?= ($libro['idioma'] ?? '') === 'ca' ? 'selected' : '' ?>>Catalán (ca)</option>
                 <option value="gl" <?= ($libro['idioma'] ?? '') === 'gl' ? 'selected' : '' ?>>Gallego (gl)</option>
                 <option value="eu" <?= ($libro['idioma'] ?? '') === 'eu' ? 'selected' : '' ?>>Euskera (eu)</option>
               </select>
@@ -110,9 +126,43 @@ $id = (int) ($libro['id'] ?? 0);
             </div>
 
             <div class="col-12 col-sm-6">
-              <label for="campo-genero" class="form-label small fw-bold">Género literario</label>
-              <input type="text" id="campo-genero" name="genero" class="form-control"
-                     value="<?= e($libro['genero'] ?? '') ?>">
+              <label for="campo-genero" class="form-label small fw-bold">Grupo / Género literario</label>
+              <div class="input-group">
+                <input type="text" id="campo-genero" name="genero" class="form-control" list="lista-generos"
+                       placeholder="Ej: 1.º ESO, 2.º ESO, Novela, Clásicos..." value="<?= e($libro['genero'] ?? '') ?>" autocomplete="off">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Ver opciones frecuentes"></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="max-height: 320px; overflow-y: auto; min-width: 260px;">
+                  <li class="dropdown-header text-uppercase fw-bold text-primary small px-2 py-1"><i class="bi bi-mortarboard me-1"></i>Grupos escolares</li>
+                  <?php 
+                    $escolaresComunes = ['1.º ESO', '2.º ESO', '3.º ESO', '4.º ESO', '1.º Bachillerato', '2.º Bachillerato', 'FP Básica', 'Ciclos Formativos'];
+                    foreach ($escolaresComunes as $esc): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($esc) ?>"><?= e($esc) ?></button></li>
+                  <?php endforeach; ?>
+                  <li><hr class="dropdown-divider my-1"></li>
+                  <li class="dropdown-header text-uppercase fw-bold text-secondary small px-2 py-1"><i class="bi bi-book me-1"></i>Todos los grupos y géneros</li>
+                  <?php 
+                    $otrosOpciones = array_diff($generosExistentes ?? [], $escolaresComunes);
+                    foreach ($otrosOpciones as $gen): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($gen) ?>"><?= e($gen) ?></button></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+              <datalist id="lista-generos">
+                <?php foreach (($generosExistentes ?? []) as $gen): ?>
+                  <option value="<?= e($gen) ?>">
+                <?php endforeach; ?>
+              </datalist>
+              <div class="mt-2 d-flex flex-wrap align-items-center gap-1">
+                <span class="text-muted small me-1" style="font-size: 0.78rem;">Frecuentes:</span>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º ESO">1.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º ESO">2.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="3.º ESO">3.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="4.º ESO">4.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º Bachillerato">1.º Bach</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º Bachillerato">2.º Bach</button>
+              </div>
             </div>
 
             <div class="col-12">
@@ -133,15 +183,143 @@ $id = (int) ($libro['id'] ?? 0);
               <textarea id="campo-observaciones" name="observaciones" class="form-control" rows="3"><?= e($libro['observaciones'] ?? '') ?></textarea>
             </div>
 
-            <div class="col-12 d-flex justify-content-end gap-2 pt-3 border-top mt-4">
-              <a href="/admin/libros" class="btn btn-secondary">Cancelar</a>
-              <button type="submit" class="btn btn-primary fw-bold px-4">
-                <i class="bi bi-save me-1"></i>Actualizar Libro
-              </button>
+            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top mt-4">
+              <div class="d-flex flex-wrap gap-2">
+                <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+                  <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalReactivarLibro">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar libro
+                  </button>
+                <?php else: ?>
+                  <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalBajaLibro">
+                    <i class="bi bi-slash-circle me-1"></i>Dar de baja libro
+                  </button>
+                <?php endif; ?>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarLibro">
+                  <i class="bi bi-trash3 me-1"></i>Eliminar del catálogo
+                </button>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <a href="/admin/libros" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary fw-bold px-4">
+                  <i class="bi bi-save me-1"></i>Actualizar Libro
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Eliminación de Libro -->
+<div class="modal fade" id="modalEliminarLibro" tabindex="-1" aria-labelledby="modalEliminarLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/eliminar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-danger" id="modalEliminarLibroLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Estás seguro de que deseas eliminar permanentemente el libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-0">
+            <ul class="mb-0 ps-3">
+              <li>Se eliminarán todas sus copias físicas y registros del catálogo.</li>
+              <li>Si existen <strong>reservas activas</strong>, se cancelarán automáticamente y se reembolsarán los tokens bloqueados a los lectores con notificación.</li>
+              <li>Esta acción no se puede deshacer.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-bold">
+            <i class="bi bi-trash3 me-1"></i>Sí, Eliminar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Baja de Libro -->
+<div class="modal fade" id="modalBajaLibro" tabindex="-1" aria-labelledby="modalBajaLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/baja">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros/editar?id=<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-warning-emphasis" id="modalBajaLibroLabel">
+            <i class="bi bi-slash-circle me-2 text-warning"></i>Dar de Baja Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Confirmas la baja del libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-3">
+            <ul class="mb-0 ps-3">
+              <li>El libro pasará al estado <code>baja</code> y dejará de ofrecerse en búsquedas públicas.</li>
+              <li>Todas sus copias físicas asociadas se marcarán en estado <code>baja</code>.</li>
+              <li>Si existen <strong>reservas activas pendientes</strong>, se cancelarán de inmediato y se devolverán los tokens bloqueados a los lectores con notificación.</li>
+            </ul>
+          </div>
+          <div class="mb-2">
+            <label for="motivo-baja-libro-edit" class="form-label small fw-bold">Motivo de la baja (obligatorio):</label>
+            <textarea id="motivo-baja-libro-edit" name="motivo" class="form-control" rows="3" required
+                      placeholder="Ej: Retirado del currículo escolar, libros obsoletos, extraviados o deteriorados..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-bold text-dark">
+            <i class="bi bi-slash-circle me-1"></i>Confirmar Baja
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reactivar Libro -->
+<div class="modal fade" id="modalReactivarLibro" tabindex="-1" aria-labelledby="modalReactivarLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/reactivar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros/editar?id=<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-success" id="modalReactivarLibroLabel">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reactivar Libro en el Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            El libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> volverá a estar en estado <code>activo</code> en el catálogo. Podrás incorporar nuevos ejemplares o reactivar los existentes cuando lo desees.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success fw-bold">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar Libro
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -480,9 +658,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') {
           e.preventDefault();
           ejecutarBusquedaPortadas();
-        }
-      });
-    }
+      }
+    });
+  });
+
+  // Selección rápida de grupo o género
+  var inputGen = document.getElementById('campo-genero');
+  if (inputGen) {
+    inputGen.addEventListener('focus', function () { this.select(); });
+    inputGen.addEventListener('click', function () { this.select(); });
+  }
+  document.querySelectorAll('.btn-opcion-genero').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var val = this.getAttribute('data-valor');
+      if (inputGen && val) {
+        inputGen.value = val;
+        inputGen.focus();
+        inputGen.dispatchEvent(new Event('change'));
+      }
+    });
   });
 });
 </script>

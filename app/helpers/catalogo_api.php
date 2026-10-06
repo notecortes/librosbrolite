@@ -110,7 +110,8 @@ function catalogo_normalizar_codigo_idioma(?string $lang): string {
 
     $map = [
         'spa' => 'es', 'es' => 'es', 'spanish' => 'es', 'castellano' => 'es', 'español' => 'es',
-        'cat' => 'ca', 'ca' => 'ca', 'catalan' => 'ca', 'valenciano' => 'ca', 'català' => 'ca',
+        'val' => 'val', 'valenciano' => 'val', 'valencià' => 'val', 'valencian' => 'val',
+        'cat' => 'ca', 'ca' => 'ca', 'catalan' => 'ca', 'català' => 'ca',
         'eng' => 'en', 'en' => 'en', 'english' => 'en', 'inglés' => 'en', 'ingles' => 'en',
         'fra' => 'fr', 'fre' => 'fr', 'fr' => 'fr', 'french' => 'fr', 'francés' => 'fr',
         'deu' => 'de', 'ger' => 'de', 'de' => 'de', 'german' => 'de', 'alemán' => 'de',
@@ -119,7 +120,7 @@ function catalogo_normalizar_codigo_idioma(?string $lang): string {
         'gal' => 'gl', 'gl' => 'gl', 'galician' => 'gl', 'gallego' => 'gl',
         'eus' => 'eu', 'baq' => 'eu', 'eu' => 'eu', 'basque' => 'eu', 'euskera' => 'eu',
     ];
-    return $map[$lang] ?? (strlen($lang) === 2 ? $lang : 'es');
+    return $map[$lang] ?? (strlen($lang) === 2 || $lang === 'val' ? $lang : 'es');
 }
 
 /**

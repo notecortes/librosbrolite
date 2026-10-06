@@ -15,6 +15,31 @@ require_once __DIR__ . '/funciones.php';
 require_once __DIR__ . '/auditoria.php';
 
 /**
+ * Asegura que las columnas de baja existan en la tabla libros (auto-migración segura).
+ */
+function catalogo_asegurar_columnas_libro(PDO $pdo): void {
+    static $verificado = false;
+    if ($verificado) {
+        return;
+    }
+    $verificado = true;
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM libros LIKE 'estado'")->fetchAll();
+        if (empty($cols)) {
+            $pdo->exec("
+                ALTER TABLE libros 
+                ADD COLUMN estado ENUM('activo','baja') NOT NULL DEFAULT 'activo',
+                ADD COLUMN motivo_baja VARCHAR(255) NULL,
+                ADD COLUMN fecha_baja DATETIME NULL,
+                ADD INDEX idx_libros_estado (estado)
+            ");
+        }
+    } catch (Throwable $e) {
+        // En caso de que el usuario de BD no tenga permisos ALTER, continúa con el esquema existente
+    }
+}
+
+/**
  * Obtiene el listado paginado de libros del catálogo aplicando filtros opcionales.
  *
  * @param PDO   $pdo              Instancia activa de base de datos
@@ -24,6 +49,7 @@ require_once __DIR__ . '/auditoria.php';
  * @return array{libros: array, total: int, pagina: int, totalPaginas: int}
  */
 function catalogo_listar_libros(PDO $pdo, array $filtros = [], int $pagina = 1, int $elementosPagina = 12): array {
+    catalogo_asegurar_columnas_libro($pdo);
     $where = ['1=1'];
     $params = [];
 
@@ -42,6 +68,13 @@ function catalogo_listar_libros(PDO $pdo, array $filtros = [], int $pagina = 1, 
     if ($genero !== '') {
         $where[] = 'l.genero = :genero';
         $params[':genero'] = $genero;
+    }
+
+    // Filtro por estado del libro (por defecto ocultar dados de baja salvo que se solicite incluirlos)
+    if (empty($filtros['incluir_bajas'])) {
+        $where[] = "(l.estado IS NULL OR l.estado != 'baja')";
+    } elseif (!empty($filtros['solo_bajas'])) {
+        $where[] = "l.estado = 'baja'";
     }
 
     $whereSql = implode(' AND ', $where);
@@ -98,6 +131,7 @@ function catalogo_listar_libros(PDO $pdo, array $filtros = [], int $pagina = 1, 
  * @return array|null Datos del libro o null si no existe
  */
 function catalogo_obtener_libro(PDO $pdo, int $id): ?array {
+    catalogo_asegurar_columnas_libro($pdo);
     $stmt = $pdo->prepare("
         SELECT l.*,
                COUNT(CASE WHEN e.estado = 'disponible' THEN 1 END) AS disponibles_count,
@@ -398,6 +432,10 @@ function catalogo_guardar_libro(PDO $pdo, array $datos, ?int $usuarioId = null):
             'modificado_por' => $usuarioId,
         ]);
 
+        if ($genero !== null && trim($genero) !== '') {
+            catalogo_persistir_genero($genero);
+        }
+
         return $id;
     }
 
@@ -420,6 +458,10 @@ function catalogo_guardar_libro(PDO $pdo, array $datos, ?int $usuarioId = null):
         'isbn13' => $isbn13,
         'creado_por' => $usuarioId,
     ]);
+
+    if ($genero !== null && trim($genero) !== '') {
+        catalogo_persistir_genero($genero);
+    }
 
     return $nuevoId;
 }
@@ -540,4 +582,426 @@ function catalogo_autocompletar(PDO $pdo, string $termino, int $limite = 6): arr
  */
 function catalogo_registrar_busqueda(PDO $pdo, string $termino, ?int $usuarioId = null): void {
     // En v4.1 canónico no hay tabla de términos de búsqueda; mantenemos la función sin error
+}
+
+/**
+ * Elimina de forma integral y atómica un libro del catálogo y todas sus dependencias.
+ *
+ * Flujo:
+ * 1. Verifica existencia del libro.
+ * 2. Obtiene todos sus ejemplares.
+ * 3. Si hay reservas activas en sus ejemplares:
+ *    - Reembolsa los tokens bloqueados al usuario vía ledger_registrar_movimiento ('liberacion_reserva').
+ *    - Notifica al usuario de la cancelación por retirada del título del catálogo.
+ *    - Marca las transacciones como 'cancelada'.
+ * 4. Desvincula transacciones de movimientos_tokens (SET transaccion_id = NULL).
+ * 5. Elimina todas las transacciones vinculadas a los ejemplares del libro.
+ * 6. Elimina los ejemplares físicos.
+ * 7. Elimina las entradas de wishlist vinculadas al libro.
+ * 8. Si la portada es local y no está en uso por otro libro, elimina el fichero en disco.
+ * 9. Elimina el registro del libro en la tabla `libros`.
+ * 10. Registra auditoría de la eliminación.
+ *
+ * @param PDO      $pdo       Instancia de base de datos
+ * @param int      $libroId   ID del libro a eliminar
+ * @param int|null $usuarioId ID del operador (Admin / Personal)
+ * @return array{ok: bool, libro: array, ejemplares_eliminados: int, reservas_canceladas: int}
+ * @throws Exception Si el libro no existe o ocurre un error en BD
+ */
+function catalogo_eliminar_libro(PDO $pdo, int $libroId, ?int $usuarioId = null): array {
+    $stmtLibro = $pdo->prepare('SELECT * FROM libros WHERE id = ?');
+    $stmtLibro->execute([$libroId]);
+    $libro = $stmtLibro->fetch(PDO::FETCH_ASSOC);
+
+    if (!$libro) {
+        throw new Exception('El libro que intentas eliminar no existe.');
+    }
+
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        // 1. Obtener todos los IDs de ejemplares físicos
+        $stmtEj = $pdo->prepare('SELECT id, estado FROM ejemplares WHERE libro_id = ?');
+        $stmtEj->execute([$libroId]);
+        $ejemplares = $stmtEj->fetchAll(PDO::FETCH_ASSOC);
+        $ejemplarIds = array_column($ejemplares, 'id');
+
+        $reservasCanceladas = 0;
+
+        if (!empty($ejemplarIds)) {
+            $placeholders = implode(',', array_fill(0, count($ejemplarIds), '?'));
+
+            // 2. Gestionar reservas activas sobre estos ejemplares
+            $sqlRes = "
+                SELECT t.id, t.usuario_id, t.tokens, t.codigo
+                FROM transacciones t
+                WHERE t.ejemplar_id IN ($placeholders)
+                  AND t.tipo = 'reserva'
+                  AND t.estado = 'activa'
+            ";
+            $stmtRes = $pdo->prepare($sqlRes);
+            $stmtRes->execute($ejemplarIds);
+            $reservasActivas = $stmtRes->fetchAll(PDO::FETCH_ASSOC);
+
+            require_once __DIR__ . '/ledger.php';
+
+            foreach ($reservasActivas as $res) {
+                $costeDevolver = (int) ($res['tokens'] > 0 ? $res['tokens'] : 1);
+                $uId = (int) $res['usuario_id'];
+                $cod = $res['codigo'] ?? '';
+
+                // Reembolsar tokens bloqueados al usuario
+                ledger_registrar_movimiento(
+                    $pdo,
+                    $uId,
+                    $costeDevolver,
+                    'liberacion_reserva',
+                    null,
+                    "Reembolso por retirada del libro «{$libro['titulo']}» del catálogo ({$cod})"
+                );
+
+                // Notificar al lector
+                $msg = "Tu reserva del libro «{$libro['titulo']}» ({$cod}) ha sido cancelada porque el título ha sido retirado del catálogo. Se han devuelto {$costeDevolver} 🪙 a tu cuenta.";
+                $stmtNotif = $pdo->prepare('
+                    INSERT INTO notificaciones (usuario_id, mensaje, leida, url, fecha)
+                    VALUES (?, ?, 0, \'/mi-historial\', NOW())
+                ');
+                $stmtNotif->execute([$uId, $msg]);
+
+                $reservasCanceladas++;
+            }
+
+            // 3. Desvincular transacciones de movimientos_tokens para preservar integridad del ledger
+            $sqlUnlinkMov = "
+                UPDATE movimientos_tokens
+                SET transaccion_id = NULL
+                WHERE transaccion_id IN (
+                    SELECT id FROM transacciones WHERE ejemplar_id IN ($placeholders)
+                )
+            ";
+            $stmtUnlink = $pdo->prepare($sqlUnlinkMov);
+            $stmtUnlink->execute($ejemplarIds);
+
+            // 4. Eliminar todas las transacciones asociadas a estos ejemplares
+            $sqlDelTx = "DELETE FROM transacciones WHERE ejemplar_id IN ($placeholders)";
+            $stmtDelTx = $pdo->prepare($sqlDelTx);
+            $stmtDelTx->execute($ejemplarIds);
+
+            // 5. Eliminar todos los ejemplares físicos
+            $sqlDelEj = "DELETE FROM ejemplares WHERE libro_id = ?";
+            $stmtDelEj = $pdo->prepare($sqlDelEj);
+            $stmtDelEj->execute([$libroId]);
+        }
+
+        // 6. Eliminar registros de wishlist asociados al libro
+        $stmtDelWish = $pdo->prepare('DELETE FROM wishlist WHERE libro_id = ?');
+        $stmtDelWish->execute([$libroId]);
+
+        // 7. Eliminar archivo físico de portada local si no lo usa ningún otro libro
+        $portadaUrl = (string) ($libro['portada_url'] ?? '');
+        if ($portadaUrl !== '' && (str_starts_with($portadaUrl, '/uploads/covers/') || str_starts_with($portadaUrl, '/uploads/portadas/'))) {
+            $stmtOtro = $pdo->prepare('SELECT COUNT(*) FROM libros WHERE portada_url = ? AND id != ?');
+            $stmtOtro->execute([$portadaUrl, $libroId]);
+            $enUsoPorOtro = (int) $stmtOtro->fetchColumn();
+            if ($enUsoPorOtro === 0) {
+                $rutaFisica = dirname(__DIR__, 2) . $portadaUrl;
+                if (is_file($rutaFisica)) {
+                    @unlink($rutaFisica);
+                }
+            }
+        }
+
+        // 8. Eliminar el libro de la tabla `libros`
+        $stmtDelLibro = $pdo->prepare('DELETE FROM libros WHERE id = ?');
+        $stmtDelLibro->execute([$libroId]);
+
+        // 9. Registrar auditoría
+        auditoria_registrar($pdo, 'libro.eliminar', 'libros', $libroId, [
+            'titulo' => $libro['titulo'],
+            'autor' => $libro['autor'],
+            'isbn13' => $libro['isbn13'],
+            'copias_eliminadas' => count($ejemplarIds),
+            'reservas_canceladas' => $reservasCanceladas,
+        ], $usuarioId);
+
+        log_accion($usuarioId, 'libro_eliminar', 'libros', $libroId, [
+            'titulo' => $libro['titulo'],
+            'autor' => $libro['autor'],
+        ]);
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'ok' => true,
+            'libro' => $libro,
+            'ejemplares_eliminados' => count($ejemplarIds),
+            'reservas_canceladas' => $reservasCanceladas,
+        ];
+    } catch (Throwable $e) {
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+/**
+ * Da de baja un libro completo del catálogo junto con todos sus ejemplares físicos asociados.
+ * Si existen reservas activas pendientes sobre sus copias, las cancela y devuelve los tokens bloqueados a los lectores.
+ *
+ * @param PDO      $pdo       Instancia activa de base de datos
+ * @param int      $libroId   ID del libro a dar de baja
+ * @param string   $motivo    Motivo obligatorio de la baja
+ * @param int|null $usuarioId Operador que ejecuta la acción
+ * @return array{ok: bool, libro: array, copias_baja: int, reservas_canceladas: int}
+ */
+function catalogo_dar_de_baja_libro(PDO $pdo, int $libroId, string $motivo, ?int $usuarioId = null): array {
+    $motivoLimpio = trim($motivo);
+    if ($motivoLimpio === '') {
+        throw new InvalidArgumentException('El motivo de la baja del libro es obligatorio.');
+    }
+
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $stmtLibro = $pdo->prepare('SELECT * FROM libros WHERE id = ? FOR UPDATE');
+        $stmtLibro->execute([$libroId]);
+        $libro = $stmtLibro->fetch(PDO::FETCH_ASSOC);
+        if (!$libro) {
+            throw new Exception('Libro no encontrado en el catálogo.');
+        }
+
+        if (($libro['estado'] ?? 'activo') === 'baja') {
+            throw new Exception('El libro ya está dado de baja del catálogo.');
+        }
+
+        // 1. Cancelar reservas activas sobre ejemplares de este libro y reembolsar tokens bloqueados
+        $stmtRes = $pdo->prepare("
+            SELECT t.id, t.usuario_id, t.ejemplar_id, t.tokens, t.codigo
+            FROM transacciones t
+            JOIN ejemplares e ON e.id = t.ejemplar_id
+            WHERE e.libro_id = ? AND t.tipo = 'reserva' AND t.estado = 'activa'
+            FOR UPDATE
+        ");
+        $stmtRes->execute([$libroId]);
+        $reservasActivas = $stmtRes->fetchAll(PDO::FETCH_ASSOC);
+        $reservasCanceladas = 0;
+
+        foreach ($reservasActivas as $res) {
+            $txId = (int) $res['id'];
+            $lectorId = (int) $res['usuario_id'];
+            $tokensDevueltos = (int) $res['tokens'];
+
+            // Cancelar transacción de reserva
+            $stmtCan = $pdo->prepare("UPDATE transacciones SET estado = 'cancelada' WHERE id = ?");
+            $stmtCan->execute([$txId]);
+
+            // Reembolsar tokens bloqueados en el ledger
+            if ($tokensDevueltos > 0) {
+                ledger_registrar_movimiento(
+                    $pdo,
+                    $lectorId,
+                    $tokensDevueltos,
+                    'liberacion_reserva',
+                    null,
+                    'Liberación por baja de libro del catálogo: ' . $libro['titulo']
+                );
+            }
+
+            // Notificar al lector
+            $stmtNotif = $pdo->prepare("
+                INSERT INTO notificaciones (usuario_id, mensaje, leida, url, fecha)
+                VALUES (?, ?, 0, '/catalogo', NOW())
+            ");
+            $stmtNotif->execute([
+                $lectorId,
+                "Tu reserva ({$res['codigo']}) del libro \"{$libro['titulo']}\" ha sido cancelada porque el libro se ha dado de baja del catálogo. Se han reembolsado tus tokens.",
+            ]);
+
+            $reservasCanceladas++;
+        }
+
+        // 2. Dar de baja todos los ejemplares físicos asociados que no estuvieran ya en estado retirado o baja
+        $stmtEj = $pdo->prepare("
+            UPDATE ejemplares 
+            SET estado = 'baja' 
+            WHERE libro_id = ? AND estado != 'retirado'
+        ");
+        $stmtEj->execute([$libroId]);
+        $copiasBaja = $stmtEj->rowCount();
+
+        // 3. Marcar el libro como 'baja' con motivo y fecha
+        $stmtUpLibro = $pdo->prepare("
+            UPDATE libros 
+            SET estado = 'baja', motivo_baja = ?, fecha_baja = NOW() 
+            WHERE id = ?
+        ");
+        $stmtUpLibro->execute([$motivoLimpio, $libroId]);
+
+        // 4. Registro de auditoría
+        auditoria_registrar($pdo, 'libro.baja', 'libros', $libroId, [
+            'titulo' => $libro['titulo'],
+            'motivo' => $motivoLimpio,
+            'copias_baja' => $copiasBaja,
+            'reservas_canceladas' => $reservasCanceladas,
+        ], $usuarioId);
+
+        log_accion($usuarioId, 'libro_baja', 'libros', $libroId, [
+            'titulo' => $libro['titulo'],
+            'motivo' => $motivoLimpio,
+            'copias_baja' => $copiasBaja,
+            'reservas_canceladas' => $reservasCanceladas,
+        ]);
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'ok' => true,
+            'libro' => $libro,
+            'copias_baja' => $copiasBaja,
+            'reservas_canceladas' => $reservasCanceladas,
+        ];
+    } catch (Throwable $e) {
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+/**
+ * Reactiva un libro previamente dado de baja en el catálogo.
+ */
+function catalogo_reactivar_libro(PDO $pdo, int $libroId, ?int $usuarioId = null): array {
+    $stmtLibro = $pdo->prepare('SELECT * FROM libros WHERE id = ?');
+    $stmtLibro->execute([$libroId]);
+    $libro = $stmtLibro->fetch(PDO::FETCH_ASSOC);
+    if (!$libro) {
+        throw new Exception('Libro no encontrado en el catálogo.');
+    }
+
+    $stmtUp = $pdo->prepare("UPDATE libros SET estado = 'activo', motivo_baja = NULL, fecha_baja = NULL WHERE id = ?");
+    $stmtUp->execute([$libroId]);
+
+    auditoria_registrar($pdo, 'libro.reactivar', 'libros', $libroId, [
+        'titulo' => $libro['titulo'],
+    ], $usuarioId);
+
+    log_accion($usuarioId, 'libro_reactivar', 'libros', $libroId, [
+        'titulo' => $libro['titulo'],
+    ]);
+
+    return [
+        'ok' => true,
+        'libro' => $libro,
+    ];
+}
+
+/**
+ * Guarda un grupo o género en el archivo persistente database/generos_persistentes.json.
+ */
+function catalogo_persistir_genero(string $genero): void {
+    $limpio = trim($genero);
+    if ($limpio === '') return;
+
+    $archivo = dirname(__DIR__, 2) . '/database/generos_persistentes.json';
+    $lista = [];
+    if (file_exists($archivo)) {
+        $json = @file_get_contents($archivo);
+        $data = @json_decode((string) $json, true);
+        if (is_array($data)) {
+            $lista = array_values(array_filter(array_map('trim', $data)));
+        }
+    }
+
+    if (!in_array($limpio, $lista, true)) {
+        array_unshift($lista, $limpio);
+        @file_put_contents($archivo, json_encode(array_values(array_unique($lista)), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+}
+
+/**
+ * Devuelve la lista unificada y priorizada de grupos y géneros literarios.
+ * Garantiza que los cursos/grupos escolares y los valores registrados previamente
+ * aparezcan siempre en las primeras posiciones.
+ */
+function catalogo_obtener_lista_generos(PDO $pdo): array {
+    $gruposEscolares = [
+        '1.º ESO',
+        '2.º ESO',
+        '3.º ESO',
+        '4.º ESO',
+        '1.º Bachillerato',
+        '2.º Bachillerato',
+        'FP Básica',
+        'Ciclos Formativos',
+        'Primaria',
+        'Infantil',
+    ];
+
+    $archivo = dirname(__DIR__, 2) . '/database/generos_persistentes.json';
+    $persistidos = [];
+    if (file_exists($archivo)) {
+        $json = @file_get_contents($archivo);
+        $data = @json_decode((string) $json, true);
+        if (is_array($data)) {
+            $persistidos = array_values(array_filter(array_map('trim', $data)));
+        }
+    }
+
+    $registradosBD = [];
+    try {
+        $stmt = $pdo->query("SELECT DISTINCT genero FROM libros WHERE genero IS NOT NULL AND TRIM(genero) != '' ORDER BY genero ASC");
+        $registradosBD = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    } catch (Throwable) {}
+
+    $generosGenerales = [
+        'Novela',
+        'Clásicos',
+        'Fantasía',
+        'Ciencia ficción',
+        'Distopía',
+        'Novela negra',
+        'Juvenil',
+        'Poesía',
+        'Ensayo',
+        'Historia',
+        'Biografía',
+        'Teatro',
+        'Aventuras',
+        'Cómic / Manga',
+        'Lecturas graduadas',
+        'Divulgación',
+        'Otros',
+    ];
+
+    // Grupos escolares y valores persistidos primero
+    $primeros = array_values(array_unique(array_filter(array_merge(
+        $gruposEscolares,
+        $persistidos,
+        $registradosBD
+    ))));
+
+    // Ordenar los primeros para que los escolares y numéricos (1.º ESO, 2.º ESO...) queden de primeros
+    usort($primeros, function($a, $b) {
+        $esA_Escolar = preg_match('/^\d+\.?[º°ª]|\bESO\b|\bBachillerato\b|\bFP\b|\bPrimaria\b/i', $a);
+        $esB_Escolar = preg_match('/^\d+\.?[º°ª]|\bESO\b|\bBachillerato\b|\bFP\b|\bPrimaria\b/i', $b);
+        if ($esA_Escolar && !$esB_Escolar) return -1;
+        if (!$esA_Escolar && $esB_Escolar) return 1;
+        return strnatcasecmp($a, $b);
+    });
+
+    $resto = array_values(array_diff($generosGenerales, $primeros));
+
+    return array_values(array_unique(array_merge($primeros, $resto)));
 }

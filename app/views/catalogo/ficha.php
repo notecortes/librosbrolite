@@ -68,6 +68,18 @@ $condicionesFormat = [
             <a href="/admin/libros/editar?id=<?= (int) $libro['id'] ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
               <i class="bi bi-pencil me-1"></i>Editar libro
             </a>
+            <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+              <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalReactivarLibroFicha">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar libro
+              </button>
+            <?php else: ?>
+              <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalBajaLibroFicha">
+                <i class="bi bi-slash-circle me-1"></i>Dar de baja libro
+              </button>
+            <?php endif; ?>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalEliminarLibroFicha">
+              <i class="bi bi-trash3 me-1"></i>Eliminar libro
+            </button>
           <?php endif; ?>
 
           <?php if (puede('entrega.confirmar')): ?>
@@ -95,6 +107,22 @@ $condicionesFormat = [
             <i class="bi bi-clock-history me-1"></i>Ver movimientos del libro
           </button>
         </div>
+      </div>
+    </div>
+  <?php endif; ?>
+
+  <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+    <div class="alert alert-danger rounded-4 d-flex align-items-center mb-4 shadow-xs">
+      <i class="bi bi-slash-circle-fill fs-3 me-3 text-danger"></i>
+      <div>
+        <strong class="d-block">Este libro ha sido dado de baja del catálogo</strong>
+        <?php if (!empty($libro['motivo_baja'])): ?>
+          <span class="small d-block"><strong>Motivo:</strong> <?= e($libro['motivo_baja']) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($libro['fecha_baja'])): ?>
+          <span class="small text-muted d-block">Fecha de baja: <?= e(date('d/m/Y H:i', strtotime($libro['fecha_baja']))) ?></span>
+        <?php endif; ?>
+        <span class="small text-muted">No admite nuevas reservas ni entregas ordinarias.</span>
       </div>
     </div>
   <?php endif; ?>
@@ -200,7 +228,22 @@ $condicionesFormat = [
 
             <div class="col-6 col-sm-4">
               <span class="text-muted small d-block">Idioma</span>
-              <strong><?= e(strtoupper((string)($libro['idioma'] ?? 'es'))) ?></strong>
+              <?php
+                $mapIdiomasFicha = [
+                    'es'  => 'Español (es)',
+                    'val' => 'Valencià (val)',
+                    'ca'  => 'Catalán (ca)',
+                    'en'  => 'Inglés (en)',
+                    'fr'  => 'Francés (fr)',
+                    'de'  => 'Alemán (de)',
+                    'it'  => 'Italiano (it)',
+                    'gl'  => 'Gallego (gl)',
+                    'eu'  => 'Euskera (eu)',
+                ];
+                $codIdiomaFicha = strtolower(trim((string)($libro['idioma'] ?? 'es')));
+                $textoIdiomaFicha = $mapIdiomasFicha[$codIdiomaFicha] ?? strtoupper($codIdiomaFicha);
+              ?>
+              <strong><?= e($textoIdiomaFicha) ?></strong>
             </div>
 
             <div class="col-6 col-sm-4">
@@ -754,4 +797,118 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<?php endif; ?>
+
+<?php if (puede('catalogo.editar')): ?>
+<!-- Modal: Confirmar Eliminación de Libro (Ficha) -->
+<div class="modal fade" id="modalEliminarLibroFicha" tabindex="-1" aria-labelledby="modalEliminarLibroFichaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/eliminar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/catalogo">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-danger" id="modalEliminarLibroFichaLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Estás seguro de que deseas eliminar permanentemente el libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-0">
+            <ul class="mb-0 ps-3">
+              <li>Se eliminarán todas sus copias físicas y registros del catálogo.</li>
+              <li>Si existen <strong>reservas activas</strong>, se cancelarán automáticamente y se reembolsarán los tokens bloqueados a los lectores con notificación.</li>
+              <li>Esta acción no se puede deshacer.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-bold">
+            <i class="bi bi-trash3 me-1"></i>Sí, Eliminar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Baja de Libro (Ficha) -->
+<div class="modal fade" id="modalBajaLibroFicha" tabindex="-1" aria-labelledby="modalBajaLibroFichaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/baja">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/libro/<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-warning-emphasis" id="modalBajaLibroFichaLabel">
+            <i class="bi bi-slash-circle me-2 text-warning"></i>Dar de Baja Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Confirmas la baja del libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-3">
+            <ul class="mb-0 ps-3">
+              <li>El libro pasará al estado <code>baja</code> y dejará de ofrecerse en búsquedas públicas.</li>
+              <li>Todas sus copias físicas asociadas se marcarán en estado <code>baja</code>.</li>
+              <li>Si existen <strong>reservas activas pendientes</strong>, se cancelarán de inmediato y se devolverán los tokens bloqueados a los lectores con notificación.</li>
+            </ul>
+          </div>
+          <div class="mb-2">
+            <label for="motivo-baja-libro-ficha" class="form-label small fw-bold">Motivo de la baja (obligatorio):</label>
+            <textarea id="motivo-baja-libro-ficha" name="motivo" class="form-control" rows="3" required
+                      placeholder="Ej: Retirado del currículo escolar, libros obsoletos, extraviados o deteriorados..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-bold text-dark">
+            <i class="bi bi-slash-circle me-1"></i>Confirmar Baja
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reactivar Libro (Ficha) -->
+<div class="modal fade" id="modalReactivarLibroFicha" tabindex="-1" aria-labelledby="modalReactivarLibroFichaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/reactivar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/libro/<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-success" id="modalReactivarLibroFichaLabel">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reactivar Libro en el Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            El libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> volverá a estar en estado <code>activo</code> en el catálogo. Podrás incorporar nuevos ejemplares o reactivar los existentes cuando lo desees.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success fw-bold">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 <?php endif; ?>

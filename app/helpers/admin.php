@@ -150,16 +150,6 @@ function admin_usuario_crear(
             'rol_id'  => $rolId,
         ], $adminId);
 
-        // Bono de bienvenida si es lector
-        if ($rolId === 3) {
-            $stmtBono = $pdo->prepare("SELECT valor FROM configuracion WHERE clave = 'bono_bienvenida'");
-            $stmtBono->execute();
-            $bono = (int) ($stmtBono->fetchColumn() ?: 2);
-            if ($bono > 0) {
-                ledger_registrar_movimiento($pdo, $nuevoId, $bono, 'bono', null, 'Bono de bienvenida');
-            }
-        }
-
         if (!$inTx && $pdo->inTransaction()) {
             $pdo->commit();
         }
@@ -202,6 +192,10 @@ function admin_usuario_actualizar(PDO $pdo, int $usuarioId, string $nombre, int 
         'rol_id' => $rolId,
     ], $adminId);
 
+    if (function_exists('usuarios_persistir_personalizados')) {
+        usuarios_persistir_personalizados($pdo);
+    }
+
     return true;
 }
 
@@ -225,6 +219,10 @@ function admin_usuario_cambiar_estado(PDO $pdo, int $usuarioId, bool $activo, ?i
     auditoria_registrar($pdo, 'usuario.cambiar_estado', 'usuarios', $usuarioId, [
         'activo' => $activo ? 1 : 0,
     ], $adminId);
+
+    if (function_exists('usuarios_persistir_personalizados')) {
+        usuarios_persistir_personalizados($pdo);
+    }
 
     return true;
 }

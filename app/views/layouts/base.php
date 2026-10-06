@@ -22,6 +22,7 @@ require_once __DIR__ . '/../../helpers/funciones.php';
 unset($_SESSION['flash']);
  $tiposFlash  = ['exito' => 'success', 'error' => 'danger', 'aviso' => 'warning', 'info' => 'info'];
  $nombreCentro = $config['centro_nombre'] ?: 'LibrosBro';
+ $uriActual   = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 ?>
 <!doctype html>
 <html lang="es">
@@ -88,30 +89,29 @@ unset($_SESSION['flash']);
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
           <?php if (!$usuario): ?>
             <!-- INVITADO: Catálogo · Cómo funciona · Ayuda -->
-            <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
-            <li class="nav-item"><a class="nav-link" href="/como-funciona"><i class="bi bi-question-circle me-1"></i>Cómo funciona</a></li>
-            <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-info-circle me-1"></i>Ayuda</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/catalogo' ? 'active' : '' ?>" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/como-funciona' ? 'active' : '' ?>" href="/como-funciona"><i class="bi bi-question-circle me-1"></i>Cómo funciona</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/ayuda' ? 'active' : '' ?>" href="/ayuda"><i class="bi bi-info-circle me-1"></i>Ayuda</a></li>
           <?php elseif ($usuario['rol_nombre'] === 'USUARIO'): ?>
             <!-- USUARIO: Catálogo · Mis reservas · Mi historial -->
-            <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
-            <li class="nav-item"><a class="nav-link" href="/mis-reservas"><i class="bi bi-bookmark me-1"></i>Mis reservas</a></li>
-            <li class="nav-item"><a class="nav-link" href="/mi-historial"><i class="bi bi-clock-history me-1"></i>Mi historial</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/catalogo' ? 'active' : '' ?>" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/mis-reservas' ? 'active' : '' ?>" href="/mis-reservas"><i class="bi bi-bookmark me-1"></i>Mis reservas</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/mi-historial' ? 'active' : '' ?>" href="/mi-historial"><i class="bi bi-clock-history me-1"></i>Mi historial</a></li>
           <?php elseif ($usuario['rol_nombre'] === 'PERSONAL'): ?>
-            <!-- PERSONAL: [Mostrador] como botón primario · Catálogo -->
+            <!-- PERSONAL: Mostrador como acción principal · Catálogo · Entrada de Libros · Gestión de Libros -->
             <li class="nav-item">
-              <a class="btn btn-primary btn-sm my-auto me-1" href="/mostrador"><i class="bi bi-shop me-1"></i>Mostrador</a>
+              <a class="btn <?= $uriActual === '/mostrador' ? 'btn-primary' : 'btn-outline-primary' ?> btn-sm my-auto me-1" href="/mostrador"><i class="bi bi-shop me-1"></i>Mostrador</a>
             </li>
-            <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
-            <?php if (puede('config.editar') || puede('metricas.ver') || puede('roles.gestionar') || puede('usuarios.gestionar') || puede('csv.importar')): ?>
-              <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2 me-1"></i>Panel</a></li>
-            <?php endif; ?>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/catalogo' ? 'active' : '' ?>" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/libros/entrada' ? 'active' : '' ?>" href="/libros/entrada"><i class="bi bi-box-arrow-in-down me-1"></i>Entrada de libros</a></li>
+            <li class="nav-item"><a class="nav-link <?= str_starts_with($uriActual, '/admin/libros') ? 'active' : '' ?>" href="/admin/libros"><i class="bi bi-collection me-1"></i>Gestión de libros</a></li>
           <?php elseif ($usuario['rol_nombre'] === 'ADMIN'): ?>
-            <!-- ADMIN: [Mostrador] · Catálogo · Panel -->
+            <!-- ADMIN: Mostrador · Catálogo · Panel de Administración -->
             <li class="nav-item">
-              <a class="btn btn-primary btn-sm my-auto me-1" href="/mostrador"><i class="bi bi-shop me-1"></i>Mostrador</a>
+              <a class="btn <?= $uriActual === '/mostrador' ? 'btn-primary' : 'btn-outline-primary' ?> btn-sm my-auto me-1" href="/mostrador"><i class="bi bi-shop me-1"></i>Mostrador</a>
             </li>
-            <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
-            <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2 me-1"></i>Panel</a></li>
+            <li class="nav-item"><a class="nav-link <?= $uriActual === '/catalogo' ? 'active' : '' ?>" href="/catalogo"><i class="bi bi-journal-bookmark me-1"></i>Catálogo</a></li>
+            <li class="nav-item"><a class="nav-link <?= (str_starts_with($uriActual, '/admin') && !str_starts_with($uriActual, '/admin/libros')) ? 'active' : '' ?>" href="/admin"><i class="bi bi-speedometer2 me-1"></i>Panel</a></li>
           <?php endif; ?>
         </ul>
         <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
@@ -142,10 +142,15 @@ unset($_SESSION['flash']);
                   <span class="avatar-iniciales"><?= e(iniciales($usuario['nombre'])) ?></span>
                 <?php endif; ?>
                 <span class="d-none d-lg-inline"><?= e($usuario['nombre']) ?></span>
+                <?php if ($usuario['rol_nombre'] === 'ADMIN'): ?>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small ms-1 d-none d-lg-inline">Admin</span>
+                <?php elseif ($usuario['rol_nombre'] === 'PERSONAL'): ?>
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill small ms-1 d-none d-lg-inline">Personal</span>
+                <?php endif; ?>
               </a>
               <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
                 <?php if ($usuario['rol_nombre'] === 'ADMIN'): ?>
-                  <li><h6 class="dropdown-header text-uppercase small">Administración</h6></li>
+                  <li><h6 class="dropdown-header text-uppercase small text-danger fw-bold">Administración</h6></li>
                   <li><a class="dropdown-item fw-semibold" href="/admin"><i class="bi bi-speedometer2 me-2 text-primary"></i>Panel de Administración</a></li>
                   <li><a class="dropdown-item fw-semibold" href="/mostrador"><i class="bi bi-shop me-2 text-warning"></i>Modo Mostrador</a></li>
                   <li><a class="dropdown-item" href="/admin/libros/nuevo"><i class="bi bi-upc-scan me-2"></i>Añadir Libro por ISBN</a></li>
@@ -157,8 +162,10 @@ unset($_SESSION['flash']);
                   <?php endif; ?>
                   <li><hr class="dropdown-divider"></li>
                 <?php elseif ($usuario['rol_nombre'] === 'PERSONAL'): ?>
-                  <li><h6 class="dropdown-header text-uppercase small">Personal</h6></li>
+                  <li><h6 class="dropdown-header text-uppercase small text-warning fw-bold">Personal de Mostrador</h6></li>
                   <li><a class="dropdown-item fw-semibold" href="/mostrador"><i class="bi bi-shop me-2 text-warning"></i>Modo Mostrador</a></li>
+                  <li><a class="dropdown-item" href="/libros/entrada"><i class="bi bi-box-arrow-in-down me-2 text-success"></i>Entrada de Libros</a></li>
+                  <li><a class="dropdown-item" href="/admin/libros"><i class="bi bi-collection me-2"></i>Gestión de Libros</a></li>
                   <li><a class="dropdown-item" href="/admin/libros/nuevo"><i class="bi bi-upc-scan me-2"></i>Añadir Libro por ISBN</a></li>
                   <?php if (puede('csv.importar')): ?>
                   <li><a class="dropdown-item" href="/admin/csv"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Importación CSV</a></li>

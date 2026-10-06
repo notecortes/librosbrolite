@@ -910,14 +910,7 @@ switch ($uriPath) {
             catalogo_registrar_busqueda($pdo, $terminoBusq, $usuario ? (int) $usuario['id'] : null);
         }
 
-        $filtrado = isset($_GET['filtrado']);
-        if ($filtrado) {
-            $soloDisponibles = !empty($_GET['solo_disponibles']);
-        } elseif (isset($_GET['solo_disponibles'])) {
-            $soloDisponibles = !empty($_GET['solo_disponibles']);
-        } else {
-            $soloDisponibles = true;
-        }
+        $soloDisponibles = !empty($_GET['solo_disponibles']);
 
         $filtros = [
             'q' => $terminoBusq,
@@ -928,12 +921,7 @@ switch ($uriPath) {
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
         $datosCat = catalogo_listar_libros($pdo, $filtros, $pagina, 12);
 
-        $generos = $pdo->query('
-            SELECT DISTINCT genero 
-            FROM libros 
-            WHERE genero IS NOT NULL AND genero != "" 
-            ORDER BY genero
-        ')->fetchAll(PDO::FETCH_COLUMN);
+        $generos = catalogo_obtener_lista_generos($pdo);
 
         $datosCat['filtros'] = $filtros;
         $datosCat['generos'] = $generos;
@@ -1058,7 +1046,14 @@ switch ($uriPath) {
         $pdo = db();
         $filtros = [
             'q' => $_GET['q'] ?? '',
+            'incluir_bajas' => true,
         ];
+        if (!empty($_GET['estado'])) {
+            $filtros['estado'] = $_GET['estado'];
+            if ($_GET['estado'] === 'baja') {
+                $filtros['solo_bajas'] = true;
+            }
+        }
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
         $datosCat = catalogo_listar_libros($pdo, $filtros, $pagina, 20);
         $datosCat['filtros'] = $filtros;
@@ -1213,17 +1208,24 @@ switch ($uriPath) {
                 render_vista('admin/libros/nuevo', [
                     'error' => $e->getMessage(),
                     'libroPrevio' => $_POST,
+                    'generosExistentes' => catalogo_obtener_lista_generos($pdo),
                 ], 'Alta de Libro — Escáner');
                 exit;
             }
         }
 
-        render_vista('admin/libros/nuevo', [], 'Alta de Libro — Escáner');
+        $generosExistentes = catalogo_obtener_lista_generos($pdo);
+
+        render_vista('admin/libros/nuevo', [
+            'generosExistentes' => $generosExistentes,
+        ], 'Alta de Libro — Escáner');
         break;
 
     case '/admin/libros/editar':
         exigir_permiso('catalogo.editar');
         $pdo = db();
+
+        $generosExistentes = catalogo_obtener_lista_generos($pdo);
 
         if ($metodo === 'POST') {
             try {
@@ -1237,6 +1239,7 @@ switch ($uriPath) {
                 render_vista('admin/libros/editar', [
                     'error' => $e->getMessage(),
                     'libro' => array_merge($libro ?: [], $_POST),
+                    'generosExistentes' => $generosExistentes,
                 ], 'Editar Libro');
                 exit;
             }
@@ -1252,7 +1255,88 @@ switch ($uriPath) {
 
         render_vista('admin/libros/editar', [
             'libro' => $libro,
+            'generosExistentes' => $generosExistentes,
         ], 'Editar Libro');
+        break;
+
+    case '/admin/libros/eliminar':
+        exigir_permiso('catalogo.editar');
+        if ($metodo !== 'POST') {
+            redireccionar('/admin/libros');
+        }
+        $pdo = db();
+        $libroId = (int) ($_POST['libro_id'] ?? 0);
+        $retorno = trim((string) ($_POST['retorno'] ?? '/admin/libros'));
+        $usuarioId = $usuario ? (int) $usuario['id'] : null;
+
+        try {
+            $res = catalogo_eliminar_libro($pdo, $libroId, $usuarioId);
+            $msg = 'El libro «' . $res['libro']['titulo'] . '» ha sido eliminado correctamente del catálogo';
+            if ($res['ejemplares_eliminados'] > 0) {
+                $msg .= ' junto con ' . $res['ejemplares_eliminados'] . ' copia(s) física(s)';
+            }
+            if ($res['reservas_canceladas'] > 0) {
+                $msg .= ' (' . $res['reservas_canceladas'] . ' reserva(s) cancelada(s) y tokens devueltos)';
+            }
+            $msg .= '.';
+            flash($msg, 'exito');
+        } catch (Exception $e) {
+            flash('Error al eliminar libro: ' . $e->getMessage(), 'error');
+        }
+
+        if (str_starts_with($retorno, '/libro/') || str_starts_with($retorno, '/admin/libros/editar')) {
+            $retorno = '/admin/libros';
+        }
+        redireccionar($retorno);
+        break;
+
+    case '/admin/libros/baja':
+        exigir_permiso('catalogo.editar');
+        if ($metodo !== 'POST') {
+            redireccionar('/admin/libros');
+        }
+        $pdo = db();
+        $libroId = (int) ($_POST['libro_id'] ?? 0);
+        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $retorno = trim((string) ($_POST['retorno'] ?? '/admin/libros'));
+        $usuarioId = $usuario ? (int) $usuario['id'] : null;
+
+        try {
+            $res = catalogo_dar_de_baja_libro($pdo, $libroId, $motivo, $usuarioId);
+            $msg = 'El libro «' . $res['libro']['titulo'] . '» ha sido dado de baja del catálogo con éxito';
+            if ($res['copias_baja'] > 0) {
+                $msg .= ' (' . $res['copias_baja'] . ' copia(s) pasadas a estado baja)';
+            }
+            if ($res['reservas_canceladas'] > 0) {
+                $msg .= ' y ' . $res['reservas_canceladas'] . ' reserva(s) cancelada(s) con reembolso de tokens';
+            }
+            $msg .= '.';
+            flash($msg, 'exito');
+        } catch (Exception $e) {
+            flash('Error al dar de baja el libro: ' . $e->getMessage(), 'error');
+        }
+
+        redireccionar($retorno);
+        break;
+
+    case '/admin/libros/reactivar':
+        exigir_permiso('catalogo.editar');
+        if ($metodo !== 'POST') {
+            redireccionar('/admin/libros');
+        }
+        $pdo = db();
+        $libroId = (int) ($_POST['libro_id'] ?? 0);
+        $retorno = trim((string) ($_POST['retorno'] ?? '/admin/libros'));
+        $usuarioId = $usuario ? (int) $usuario['id'] : null;
+
+        try {
+            $res = catalogo_reactivar_libro($pdo, $libroId, $usuarioId);
+            flash('El libro «' . $res['libro']['titulo'] . '» ha sido reactivado en el catálogo con éxito.', 'exito');
+        } catch (Exception $e) {
+            flash('Error al reactivar el libro: ' . $e->getMessage(), 'error');
+        }
+
+        redireccionar($retorno);
         break;
 
     // -------------------------------------------------------------

@@ -34,5 +34,17 @@
         "email_verificado": 1,
         "fecha_registro": "2026-09-26 21:52:01",
         "tokens_saldo": "2"
+    },
+    {
+        "id": 9,
+        "nombre": "pepe",
+        "email": "a@aa.com",
+        "password_hash": "$2y$10$cyz7.PtIx.j7yLE5BiOUwOpLGDsIdQQqarLvxc7\/soY.0NhHyWYu2",
+        "rol_id": 3,
+        "activo": 1,
+        "auth_provider": "local",
+        "email_verificado": 1,
+        "fecha_registro": "2026-10-06 09:38:41",
+        "tokens_saldo": "0"
     }
 ]

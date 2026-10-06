@@ -61,9 +61,9 @@ $costeLibro = $config['coste_libro'] ?? '1';
         </div>
 
         <div class="col-12 col-sm-6 col-md-3">
-          <label for="filtro-genero" class="form-label small fw-bold text-muted">Género literario</label>
+          <label for="filtro-genero" class="form-label small fw-bold text-muted">Grupo / Género literario</label>
           <select id="filtro-genero" name="genero" class="form-select">
-            <option value="">Todos los géneros</option>
+            <option value="">Todos los grupos y géneros</option>
             <?php foreach ($generos as $gen): ?>
               <option value="<?= e($gen) ?>" <?= ($filtros['genero'] ?? '') === $gen ? 'selected' : '' ?>>
                 <?= e($gen) ?>
@@ -90,7 +90,7 @@ $costeLibro = $config['coste_libro'] ?? '1';
           <button type="submit" class="btn btn-primary w-100 fw-bold">
             <i class="bi bi-funnel me-1"></i>Filtrar
           </button>
-          <?php if (!empty($filtros['q']) || !empty($filtros['genero']) || empty($filtros['solo_disponibles'])): ?>
+          <?php if (!empty($filtros['q']) || !empty($filtros['genero']) || !empty($filtros['solo_disponibles'])): ?>
             <a href="/catalogo" class="btn btn-outline-secondary" title="Limpiar filtros">
               <i class="bi bi-x-lg"></i>
             </a>
