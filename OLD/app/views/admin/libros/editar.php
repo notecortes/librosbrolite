@@ -1,0 +1,692 @@
+<?php
+/**
+ * BookSwap · Edición de Libro (Admin / Personal).
+ * Permite modificar los metadatos bibliográficos de un libro admitido en el catálogo.
+ */
+declare(strict_types=1);
+
+$libro = $libro ?? [];
+$error = $error ?? null;
+$id = (int) ($libro['id'] ?? 0);
+?>
+
+<div class="container-xxl py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 fw-800 mb-1">Editar Libro #<?= $id ?></h1>
+      <p class="text-muted mb-0">Actualiza los metadatos bibliográficos del título en el catálogo.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/admin/libros" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver al Catálogo
+      </a>
+      <a href="/admin/ejemplares?libro_id=<?= $id ?>" class="btn btn-outline-primary">
+        <i class="bi bi-bookshelf me-1"></i>Ver Ejemplares (<?= (int) ($libro['total_ejemplares'] ?? 0) ?>)
+      </a>
+      <a href="/libro/<?= $id ?>" class="btn btn-outline-secondary" target="_blank">
+        <i class="bi bi-eye me-1"></i>Ficha Pública
+      </a>
+    </div>
+  </div>
+
+  <?php if (!empty($error)): ?>
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><?= e($error) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+  <?php endif; ?>
+
+  <div class="row g-4">
+    <!-- Columna Portada -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-4">
+        <h2 class="h6 fw-bold text-muted text-uppercase mb-3">Previsualización de Portada</h2>
+        <div class="ratio ratio-3x4 bg-light rounded-3 overflow-hidden mx-auto shadow-xs border" style="--bs-aspect-ratio: calc(4 / 3 * 100%); max-width: 220px;">
+          <?php
+            $portada = catalogo_resolver_url_portada($libro);
+            $fallbackSvg = '/portada-svg?titulo=' . urlencode($libro['titulo'] ?? '') . '&autor=' . urlencode($libro['autor'] ?? '');
+          ?>
+          <img id="img-previsualizacion" src="<?= e($portada) ?>" alt="Portada" width="220" height="293" loading="lazy" class="object-fit-cover w-100 h-100"
+               data-fallback="<?= e($fallbackSvg) ?>"
+               onerror="this.onerror=null; this.src=this.dataset.fallback;">
+        </div>
+
+        <button type="button" class="btn btn-outline-primary fw-bold shadow-xs mt-3 w-100 py-2 btn-disparar-buscador-portadas">
+          <i class="bi bi-images me-1"></i>Buscar Portadas en la Red
+        </button>
+      </div>
+    </div>
+
+    <!-- Columna Formulario -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+          <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+            <div class="alert alert-danger rounded-4 d-flex align-items-center mb-4">
+              <i class="bi bi-slash-circle-fill fs-3 me-3 text-danger"></i>
+              <div>
+                <strong class="d-block">Este libro está dado de baja del catálogo</strong>
+                <?php if (!empty($libro['motivo_baja'])): ?>
+                  <span class="small d-block"><strong>Motivo:</strong> <?= e($libro['motivo_baja']) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($libro['fecha_baja'])): ?>
+                  <span class="small text-muted d-block">Fecha: <?= e(date('d/m/Y H:i', strtotime($libro['fecha_baja']))) ?></span>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+
+          <form method="POST" action="/admin/libros/editar" id="form-libro-editar" class="row g-3">
+            <?= csrf_campo() ?>
+            <input type="hidden" name="id" value="<?= $id ?>">
+
+            <div class="col-12 col-sm-6">
+              <label for="campo-isbn" class="form-label small fw-bold">ISBN-13</label>
+              <input type="text" id="campo-isbn" name="isbn13" class="form-control font-monospace"
+                     value="<?= e($libro['isbn13'] ?? '') ?>" placeholder="97884...">
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <label for="campo-idioma" class="form-label small fw-bold">Idioma</label>
+              <select id="campo-idioma" name="idioma" class="form-select">
+                <option value="es" <?= ($libro['idioma'] ?? 'es') === 'es' ? 'selected' : '' ?>>Español (es)</option>
+                <option value="val" <?= ($libro['idioma'] ?? '') === 'val' ? 'selected' : '' ?>>Valencià (val)</option>
+                <option value="ca" <?= ($libro['idioma'] ?? '') === 'ca' ? 'selected' : '' ?>>Catalán (ca)</option>
+                <option value="en" <?= ($libro['idioma'] ?? '') === 'en' ? 'selected' : '' ?>>Inglés (en)</option>
+                <option value="fr" <?= ($libro['idioma'] ?? '') === 'fr' ? 'selected' : '' ?>>Francés (fr)</option>
+                <option value="de" <?= ($libro['idioma'] ?? '') === 'de' ? 'selected' : '' ?>>Alemán (de)</option>
+                <option value="it" <?= ($libro['idioma'] ?? '') === 'it' ? 'selected' : '' ?>>Italiano (it)</option>
+                <option value="gl" <?= ($libro['idioma'] ?? '') === 'gl' ? 'selected' : '' ?>>Gallego (gl)</option>
+                <option value="eu" <?= ($libro['idioma'] ?? '') === 'eu' ? 'selected' : '' ?>>Euskera (eu)</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label for="campo-titulo" class="form-label small fw-bold">Título <span class="text-danger">*</span></label>
+              <input type="text" id="campo-titulo" name="titulo" class="form-control" required
+                     value="<?= e($libro['titulo'] ?? '') ?>">
+            </div>
+
+            <div class="col-12 col-sm-7">
+              <label for="campo-autor" class="form-label small fw-bold">Autor / Autores <span class="text-danger">*</span></label>
+              <input type="text" id="campo-autor" name="autor" class="form-control" required
+                     value="<?= e($libro['autor'] ?? '') ?>">
+            </div>
+
+            <div class="col-12 col-sm-5">
+              <label for="campo-anio" class="form-label small fw-bold">Año de Publicación</label>
+              <input type="number" id="campo-anio" name="anio" class="form-control" min="1400" max="<?= date('Y') + 1 ?>"
+                     value="<?= e((string)($libro['anio'] ?? '')) ?>">
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <label for="campo-editorial" class="form-label small fw-bold">Editorial</label>
+              <input type="text" id="campo-editorial" name="editorial" class="form-control"
+                     value="<?= e($libro['editorial'] ?? '') ?>">
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <label for="campo-genero" class="form-label small fw-bold">Grupo / Género literario</label>
+              <div class="input-group">
+                <input type="text" id="campo-genero" name="genero" class="form-control" list="lista-generos"
+                       placeholder="Ej: 1.º ESO, 2.º ESO, Novela, Clásicos..." value="<?= e($libro['genero'] ?? '') ?>" autocomplete="off">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Ver opciones frecuentes"></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="max-height: 320px; overflow-y: auto; min-width: 260px;">
+                  <li class="dropdown-header text-uppercase fw-bold text-primary small px-2 py-1"><i class="bi bi-mortarboard me-1"></i>Grupos escolares</li>
+                  <?php 
+                    $escolaresComunes = ['1.º ESO', '2.º ESO', '3.º ESO', '4.º ESO', '1.º Bachillerato', '2.º Bachillerato', 'FP Básica', 'Ciclos Formativos'];
+                    foreach ($escolaresComunes as $esc): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($esc) ?>"><?= e($esc) ?></button></li>
+                  <?php endforeach; ?>
+                  <li><hr class="dropdown-divider my-1"></li>
+                  <li class="dropdown-header text-uppercase fw-bold text-secondary small px-2 py-1"><i class="bi bi-book me-1"></i>Todos los grupos y géneros</li>
+                  <?php 
+                    $otrosOpciones = array_diff($generosExistentes ?? [], $escolaresComunes);
+                    foreach ($otrosOpciones as $gen): 
+                  ?>
+                    <li><button class="dropdown-item py-1 rounded small btn-opcion-genero" type="button" data-valor="<?= e($gen) ?>"><?= e($gen) ?></button></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+              <datalist id="lista-generos">
+                <?php foreach (($generosExistentes ?? []) as $gen): ?>
+                  <option value="<?= e($gen) ?>">
+                <?php endforeach; ?>
+              </datalist>
+              <div class="mt-2 d-flex flex-wrap align-items-center gap-1">
+                <span class="text-muted small me-1" style="font-size: 0.78rem;">Frecuentes:</span>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º ESO">1.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º ESO">2.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="3.º ESO">3.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="4.º ESO">4.º ESO</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="1.º Bachillerato">1.º Bach</button>
+                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 btn-opcion-genero" style="font-size: 0.75rem;" data-valor="2.º Bachillerato">2.º Bach</button>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label for="campo-portada" class="form-label small fw-bold">URL o ruta de la Portada</label>
+              <div class="input-group">
+                <input type="text" id="campo-portada" name="portada_url" class="form-control"
+                       placeholder="https://... o /uploads/covers/..."
+                       value="<?= e($libro['portada_url'] ?? '') ?>">
+                <button type="button" class="btn btn-primary fw-semibold px-3 btn-disparar-buscador-portadas" title="Buscar alternativas en Google Books y Open Library">
+                  <i class="bi bi-images me-1"></i>Buscar Portadas
+                </button>
+              </div>
+              <div class="form-text">Puedes introducir una URL/ruta directa o pulsar <strong>Buscar Portadas</strong> para encontrar opciones en Google Books y Open Library.</div>
+            </div>
+
+            <div class="col-12">
+              <label for="campo-observaciones" class="form-label small fw-bold">Observaciones / Sinopsis</label>
+              <textarea id="campo-observaciones" name="observaciones" class="form-control" rows="3"><?= e($libro['observaciones'] ?? '') ?></textarea>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top mt-4">
+              <div class="d-flex flex-wrap gap-2">
+                <?php if (($libro['estado'] ?? 'activo') === 'baja'): ?>
+                  <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalReactivarLibro">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar libro
+                  </button>
+                <?php else: ?>
+                  <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalBajaLibro">
+                    <i class="bi bi-slash-circle me-1"></i>Dar de baja libro
+                  </button>
+                <?php endif; ?>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarLibro">
+                  <i class="bi bi-trash3 me-1"></i>Eliminar del catálogo
+                </button>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <a href="/admin/libros" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary fw-bold px-4">
+                  <i class="bi bi-save me-1"></i>Actualizar Libro
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Eliminación de Libro -->
+<div class="modal fade" id="modalEliminarLibro" tabindex="-1" aria-labelledby="modalEliminarLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/eliminar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-danger" id="modalEliminarLibroLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Estás seguro de que deseas eliminar permanentemente el libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-0">
+            <ul class="mb-0 ps-3">
+              <li>Se eliminarán todas sus copias físicas y registros del catálogo.</li>
+              <li>Si existen <strong>reservas activas</strong>, se cancelarán automáticamente y se reembolsarán los tokens bloqueados a los lectores con notificación.</li>
+              <li>Esta acción no se puede deshacer.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-bold">
+            <i class="bi bi-trash3 me-1"></i>Sí, Eliminar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Baja de Libro -->
+<div class="modal fade" id="modalBajaLibro" tabindex="-1" aria-labelledby="modalBajaLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/baja">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros/editar?id=<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-warning-emphasis" id="modalBajaLibroLabel">
+            <i class="bi bi-slash-circle me-2 text-warning"></i>Dar de Baja Libro del Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">
+            ¿Confirmas la baja del libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> del catálogo?
+          </p>
+          <div class="alert alert-warning small border-0 rounded-3 mb-3">
+            <ul class="mb-0 ps-3">
+              <li>El libro pasará al estado <code>baja</code> y dejará de ofrecerse en búsquedas públicas.</li>
+              <li>Todas sus copias físicas asociadas se marcarán en estado <code>baja</code>.</li>
+              <li>Si existen <strong>reservas activas pendientes</strong>, se cancelarán de inmediato y se devolverán los tokens bloqueados a los lectores con notificación.</li>
+            </ul>
+          </div>
+          <div class="mb-2">
+            <label for="motivo-baja-libro-edit" class="form-label small fw-bold">Motivo de la baja (obligatorio):</label>
+            <textarea id="motivo-baja-libro-edit" name="motivo" class="form-control" rows="3" required
+                      placeholder="Ej: Retirado del currículo escolar, libros obsoletos, extraviados o deteriorados..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-bold text-dark">
+            <i class="bi bi-slash-circle me-1"></i>Confirmar Baja
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reactivar Libro -->
+<div class="modal fade" id="modalReactivarLibro" tabindex="-1" aria-labelledby="modalReactivarLibroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <form method="POST" action="/admin/libros/reactivar">
+        <?= csrf_campo() ?>
+        <input type="hidden" name="libro_id" value="<?= (int) $libro['id'] ?>">
+        <input type="hidden" name="retorno" value="/admin/libros/editar?id=<?= (int) $libro['id'] ?>">
+        
+        <div class="modal-header border-0 pb-0">
+          <h2 class="h5 fw-bold modal-title text-success" id="modalReactivarLibroLabel">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reactivar Libro en el Catálogo
+          </h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            El libro <strong class="text-body"><?= e($libro['titulo']) ?></strong> volverá a estar en estado <code>activo</code> en el catálogo. Podrás incorporar nuevos ejemplares o reactivar los existentes cuando lo desees.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success fw-bold">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar Libro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Buscador de Portadas -->
+<div class="modal fade" id="modal-buscar-portadas" tabindex="-1" aria-labelledby="modalBuscarPortadasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom p-4">
+        <div>
+          <h2 class="modal-title h5 fw-bold mb-1" id="modalBuscarPortadasLabel">
+            <i class="bi bi-images text-primary me-2"></i>Buscador de Portadas en la Red
+          </h2>
+          <p class="text-muted small mb-0">Explora portadas alternativas en Open Library y Google Books según el título, la editorial y el ISBN.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body p-4 bg-light">
+        <!-- Barra de refinamiento de búsqueda -->
+        <div class="card border-0 shadow-xs rounded-3 p-3 mb-4 bg-white">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+              <label for="modal-busca-titulo" class="form-label small fw-bold text-muted mb-1">Título</label>
+              <input type="text" id="modal-busca-titulo" class="form-control form-control-sm" placeholder="Título del libro">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <label for="modal-busca-autor" class="form-label small fw-bold text-muted mb-1">Autor</label>
+              <input type="text" id="modal-busca-autor" class="form-control form-control-sm" placeholder="Autor">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <label for="modal-busca-editorial" class="form-label small fw-bold text-muted mb-1">Editorial</label>
+              <input type="text" id="modal-busca-editorial" class="form-control form-control-sm" placeholder="Editorial">
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
+              <label for="modal-busca-isbn" class="form-label small fw-bold text-muted mb-1">ISBN</label>
+              <input type="text" id="modal-busca-isbn" class="form-control form-control-sm font-monospace" placeholder="ISBN">
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-modal-limpiar">
+                <i class="bi bi-x-circle me-1"></i>Limpiar
+              </button>
+              <button type="button" class="btn btn-primary btn-sm fw-bold px-3" id="btn-modal-ejecutar-busqueda">
+                <span id="spinner-btn-modal" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                <i class="bi bi-search me-1" id="icono-btn-modal"></i>Buscar Portadas
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado de búsqueda: Spinner y Alertas -->
+        <div id="modal-estado-busqueda" class="mb-3">
+          <div id="modal-cargando" class="text-center py-5 d-none">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <h3 class="h6 fw-bold text-secondary mb-1">Consultando bibliotecas digitales...</h3>
+            <p class="small text-muted mb-0">Buscando portadas y ediciones coincidentes en Open Library y Google Books.</p>
+          </div>
+
+          <div id="modal-alerta" class="alert alert-warning d-none rounded-3 shadow-xs" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><span id="modal-alerta-texto"></span>
+          </div>
+
+          <div id="modal-info-resultados" class="d-none d-flex justify-content-between align-items-center mb-3">
+            <span class="small fw-bold text-muted" id="modal-contador-texto"></span>
+            <span class="small text-muted"><i class="bi bi-cursor me-1"></i>Haz clic en una portada para seleccionarla</span>
+          </div>
+        </div>
+
+        <!-- Rejilla interactiva de portadas encontradas -->
+        <div id="modal-grid-portadas" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+          <!-- Las tarjetas de portada se insertan dinámicamente mediante JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer border-top p-3 bg-white">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast flotante de confirmación de selección -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+  <div id="toast-portada-seleccionada" class="toast align-items-center text-bg-success border-0 shadow-lg rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <div>
+          <strong>¡Portada seleccionada!</strong>
+          <div class="small">Recuerda pulsar «Actualizar Libro» para guardar los cambios.</div>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var campoPortada = document.getElementById('campo-portada');
+  var campoTitulo = document.getElementById('campo-titulo');
+  var campoAutor = document.getElementById('campo-autor');
+  var campoEditorial = document.getElementById('campo-editorial');
+  var campoIsbn = document.getElementById('campo-isbn');
+  var campoAnio = document.getElementById('campo-anio');
+  var imgPrev = document.getElementById('img-previsualizacion');
+
+  var modalEl = document.getElementById('modal-buscar-portadas');
+  var bsModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+  var modalTitulo = document.getElementById('modal-busca-titulo');
+  var modalAutor = document.getElementById('modal-busca-autor');
+  var modalEditorial = document.getElementById('modal-busca-editorial');
+  var modalIsbn = document.getElementById('modal-busca-isbn');
+  var btnModalBuscar = document.getElementById('btn-modal-ejecutar-busqueda');
+  var btnModalLimpiar = document.getElementById('btn-modal-limpiar');
+  var spinnerModal = document.getElementById('spinner-btn-modal');
+  var iconoModal = document.getElementById('icono-btn-modal');
+
+  var cargandoEl = document.getElementById('modal-cargando');
+  var alertaEl = document.getElementById('modal-alerta');
+  var alertaTexto = document.getElementById('modal-alerta-texto');
+  var infoResultados = document.getElementById('modal-info-resultados');
+  var contadorTexto = document.getElementById('modal-contador-texto');
+  var gridPortadas = document.getElementById('modal-grid-portadas');
+
+  var toastEl = document.getElementById('toast-portada-seleccionada');
+  var bsToast = toastEl ? new bootstrap.Toast(toastEl, { delay: 4500 }) : null;
+
+  // Refrescar preview en el formulario
+  var refrescar = function () {
+    var url = campoPortada.value.trim();
+    if (url !== '') {
+      imgPrev.src = url;
+      imgPrev.onerror = function () {
+        imgPrev.src = '/portada-svg?titulo=' + encodeURIComponent(campoTitulo.value || '') + '&autor=' + encodeURIComponent(campoAutor.value || '');
+      };
+    } else {
+      imgPrev.src = '/portada-svg?titulo=' + encodeURIComponent(campoTitulo.value || '') + '&autor=' + encodeURIComponent(campoAutor.value || '');
+    }
+  };
+
+  if (campoPortada) campoPortada.addEventListener('input', refrescar);
+  if (campoTitulo) campoTitulo.addEventListener('input', refrescar);
+  if (campoAutor) campoAutor.addEventListener('input', refrescar);
+
+  // Función para ejecutar búsqueda de portadas
+  var ejecutarBusquedaPortadas = function () {
+    var tit = modalTitulo ? modalTitulo.value.trim() : '';
+    var aut = modalAutor ? modalAutor.value.trim() : '';
+    var edi = modalEditorial ? modalEditorial.value.trim() : '';
+    var isb = modalIsbn ? modalIsbn.value.trim() : '';
+    var ani = campoAnio ? campoAnio.value.trim() : '';
+
+    if (tit === '' && isb === '') {
+      alertaTexto.textContent = 'Introduce al menos el título o el ISBN para buscar portadas.';
+      alertaEl.classList.remove('d-none');
+      infoResultados.classList.add('d-none');
+      gridPortadas.innerHTML = '';
+      return;
+    }
+
+    alertaEl.classList.add('d-none');
+    cargandoEl.classList.remove('d-none');
+    infoResultados.classList.add('d-none');
+    gridPortadas.innerHTML = '';
+    if (spinnerModal) spinnerModal.classList.remove('d-none');
+    if (iconoModal) iconoModal.classList.add('d-none');
+    if (btnModalBuscar) btnModalBuscar.disabled = true;
+
+    var qs = new URLSearchParams({
+      titulo: tit,
+      autor: aut,
+      editorial: edi,
+      isbn: isb,
+      anio: ani
+    });
+
+    fetch('/admin/libros/buscar-portadas?' + qs.toString(), {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function (r) {
+      if (!r.ok) throw new Error('Error de servidor al buscar portadas');
+      return r.json();
+    })
+    .then(function (data) {
+      cargandoEl.classList.add('d-none');
+      if (spinnerModal) spinnerModal.classList.add('d-none');
+      if (iconoModal) iconoModal.classList.remove('d-none');
+      if (btnModalBuscar) btnModalBuscar.disabled = false;
+
+      var portadas = data.portadas || [];
+      if (portadas.length === 0) {
+        alertaTexto.textContent = 'No se encontraron portadas alternativas para estos criterios. Prueba a simplificar el título o eliminar la editorial.';
+        alertaEl.classList.remove('d-none');
+        return;
+      }
+
+      contadorTexto.textContent = 'Se han encontrado ' + portadas.length + ' portadas disponibles';
+      infoResultados.classList.remove('d-none');
+
+      // Renderizar rejilla
+      portadas.forEach(function (p) {
+        var col = document.createElement('div');
+        col.className = 'col';
+
+        var card = document.createElement('div');
+        card.className = 'card h-100 border-0 shadow-sm rounded-3 overflow-hidden position-relative portada-card-hover';
+        card.style.cursor = 'pointer';
+        card.style.transition = 'all 0.2s ease-in-out';
+
+        // Ratio contenedor de la imagen (sin capas oscuras encima)
+        var ratioDiv = document.createElement('div');
+        ratioDiv.className = 'ratio ratio-3x4 bg-light overflow-hidden';
+
+        var img = document.createElement('img');
+        img.src = p.thumbnail || p.url;
+        img.alt = p.titulo || 'Portada encontrada';
+        img.className = 'object-fit-cover w-100 h-100';
+        img.loading = 'lazy';
+        img.onerror = function () {
+          // Si falla la miniatura, probar url directa o fallback
+          if (this.src !== p.url) {
+            this.src = p.url;
+          } else {
+            this.src = '/portada-svg?titulo=' + encodeURIComponent(p.titulo || '') + '&autor=' + encodeURIComponent(p.autor || '');
+          }
+        };
+        ratioDiv.appendChild(img);
+        card.appendChild(ratioDiv);
+
+        // Card body con detalles y botón
+        var body = document.createElement('div');
+        body.className = 'card-body p-2 d-flex flex-column';
+
+        // Fila con editorial y fuente
+        var rowMeta = document.createElement('div');
+        rowMeta.className = 'd-flex align-items-center justify-content-between gap-1 mb-1';
+
+        var pEd = document.createElement('span');
+        pEd.className = 'small fw-bold text-truncate text-secondary';
+        pEd.title = p.editorial || 'Editorial no especificada';
+        pEd.textContent = p.editorial ? p.editorial : 'Edición general';
+        rowMeta.appendChild(pEd);
+
+        if (p.fuente) {
+          var badgeSrc = document.createElement('span');
+          badgeSrc.className = 'badge bg-light text-muted border text-nowrap';
+          badgeSrc.style.fontSize = '0.68rem';
+          badgeSrc.textContent = p.fuente;
+          rowMeta.appendChild(badgeSrc);
+        }
+        body.appendChild(rowMeta);
+
+        // Badge editorial si coincide (en el cuerpo de la tarjeta, no sobre la imagen)
+        if (p.coincide_editorial) {
+          var badgeEd = document.createElement('div');
+          badgeEd.className = 'badge bg-success-subtle text-success border border-success-subtle align-self-start mb-1';
+          badgeEd.style.fontSize = '0.7rem';
+          badgeEd.innerHTML = '<i class="bi bi-check2 me-1"></i>Editorial coincidente';
+          body.appendChild(badgeEd);
+        }
+
+        if (p.anio) {
+          var pAn = document.createElement('div');
+          pAn.className = 'small text-muted mb-2';
+          pAn.textContent = 'Año: ' + p.anio;
+          body.appendChild(pAn);
+        }
+
+        var btnSel = document.createElement('button');
+        btnSel.type = 'button';
+        btnSel.className = 'btn btn-outline-primary btn-sm w-100 fw-bold mt-auto py-1';
+        btnSel.innerHTML = '<i class="bi bi-check-lg me-1"></i>Elegir';
+        body.appendChild(btnSel);
+
+        card.appendChild(body);
+
+        // Acción al hacer clic en cualquier parte de la tarjeta o botón
+        var seleccionarEstaPortada = function () {
+          campoPortada.value = p.url;
+          refrescar();
+          if (bsModal) bsModal.hide();
+          if (bsToast) bsToast.show();
+        };
+
+        card.addEventListener('click', seleccionarEstaPortada);
+        col.appendChild(card);
+        gridPortadas.appendChild(col);
+      });
+    })
+    .catch(function (err) {
+      cargandoEl.classList.add('d-none');
+      if (spinnerModal) spinnerModal.classList.add('d-none');
+      if (iconoModal) iconoModal.classList.remove('d-none');
+      if (btnModalBuscar) btnModalBuscar.disabled = false;
+      alertaTexto.textContent = 'Hubo un problema al buscar portadas. Comprueba la conexión o intenta más tarde.';
+      alertaEl.classList.remove('d-none');
+    });
+  };
+
+  // Abrir modal y sincronizar campos
+  var disparadores = document.querySelectorAll('.btn-disparar-buscador-portadas');
+  disparadores.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (modalTitulo) modalTitulo.value = campoTitulo ? campoTitulo.value : '';
+      if (modalAutor) modalAutor.value = campoAutor ? campoAutor.value : '';
+      if (modalEditorial) modalEditorial.value = campoEditorial ? campoEditorial.value : '';
+      if (modalIsbn) modalIsbn.value = campoIsbn ? campoIsbn.value : '';
+
+      if (bsModal) {
+        bsModal.show();
+        ejecutarBusquedaPortadas();
+      }
+    });
+  });
+
+  if (btnModalBuscar) {
+    btnModalBuscar.addEventListener('click', ejecutarBusquedaPortadas);
+  }
+
+  if (btnModalLimpiar) {
+    btnModalLimpiar.addEventListener('click', function () {
+      if (modalTitulo) modalTitulo.value = '';
+      if (modalAutor) modalAutor.value = '';
+      if (modalEditorial) modalEditorial.value = '';
+      if (modalIsbn) modalIsbn.value = '';
+      if (modalTitulo) modalTitulo.focus();
+    });
+  }
+
+  // Permitir pulsar Enter en los inputs del modal
+  [modalTitulo, modalAutor, modalEditorial, modalIsbn].forEach(function (inp) {
+    if (inp) {
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          ejecutarBusquedaPortadas();
+      }
+    });
+  });
+
+  // Selección rápida de grupo o género
+  var inputGen = document.getElementById('campo-genero');
+  if (inputGen) {
+    inputGen.addEventListener('focus', function () { this.select(); });
+    inputGen.addEventListener('click', function () { this.select(); });
+  }
+  document.querySelectorAll('.btn-opcion-genero').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var val = this.getAttribute('data-valor');
+      if (inputGen && val) {
+        inputGen.value = val;
+        inputGen.focus();
+        inputGen.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+});
+</script>
+
+<style>
+.portada-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  border-color: var(--bs-primary) !important;
+}
+</style>
+

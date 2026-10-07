@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Proteger archivos sensibles contra lectura web
+    <FilesMatch "(^\.env|\.sql$|\.md$|\.json$|\.lock$|Dockerfile|docker-compose\.yml)">
+        Require all denied
+    </FilesMatch>
+
+    # 2. Bloquear acceso a carpetas privadas
+    RewriteRule ^(app|config|database|tests|docs|bin|backups)/ - [F,L]
+
+    # 3. Si el DocumentRoot apunta a la raíz del proyecto, reenviar a public/
+    RewriteRule ^$ public/ [L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Desactivar listado de directorios
+Options -Indexes
