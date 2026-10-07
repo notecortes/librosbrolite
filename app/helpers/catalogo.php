@@ -926,6 +926,10 @@ function catalogo_persistir_genero(string $genero): void {
 
     if (!in_array($limpio, $lista, true)) {
         array_unshift($lista, $limpio);
+        $dir = dirname($archivo);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
         @file_put_contents($archivo, json_encode(array_values(array_unique($lista)), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }
