@@ -1067,7 +1067,8 @@ switch ($uriPath) {
 
         if ($metodo === 'POST') {
             $libroId = (int) ($_POST['libro_id'] ?? 0);
-            $cantidad = (int) ($_POST['copias'] ?? $_POST['cantidad'] ?? 1);
+            $copiasRaw = $_POST['copias'] ?? $_POST['cantidad'] ?? null;
+            $cantidad = ($copiasRaw !== null && $copiasRaw !== '') ? (int) $copiasRaw : 1;
             $condicion = trim($_POST['condicion'] ?? 'bueno');
             $ubicacion = trim($_POST['ubicacion'] ?? 'MOSTRADOR');
             $depositante = !empty($_POST['depositante']) ? trim($_POST['depositante']) : null;
@@ -1075,12 +1076,16 @@ switch ($uriPath) {
 
             try {
                 $resultado = libro_entrada_copias($pdo, $libroId, $cantidad, $condicion, $ubicacion, $depositante, $personalId);
-                $msg = 'Se han incorporado ' . $resultado['copias_creadas'] . ' copia(s) al catálogo con éxito.';
-                if (!empty($resultado['depositante_id'])) {
-                    $depNombre = $resultado['depositante']['nombre'] ?? 'lector';
-                    $msg .= ' Acreditados +' . $resultado['tokens_acreditados'] . ' token(s) a ' . $depNombre . '.';
+                if ($resultado['copias_creadas'] === 0) {
+                    flash('Libro registrado en el catálogo sin ejemplares físicos (0 copias en stock).', 'exito');
+                } else {
+                    $msg = 'Se han incorporado ' . $resultado['copias_creadas'] . ' copia(s) al catálogo con éxito.';
+                    if (!empty($resultado['depositante_id'])) {
+                        $depNombre = $resultado['depositante']['nombre'] ?? 'lector';
+                        $msg .= ' Acreditados +' . $resultado['tokens_acreditados'] . ' token(s) a ' . $depNombre . '.';
+                    }
+                    flash($msg, 'exito');
                 }
-                flash($msg, 'exito');
                 redireccionar('/libro/' . $libroId);
             } catch (Exception $e) {
                 flash($e->getMessage(), 'error');
@@ -1191,8 +1196,11 @@ switch ($uriPath) {
                 $usuarioId = $usuario ? (int) $usuario['id'] : null;
                 $nuevoId = catalogo_guardar_libro($pdo, $_POST, $usuarioId);
 
+                $accion = trim((string) ($_POST['accion'] ?? ''));
+                $crearEjemplar = !empty($_POST['crear_ejemplar']) && $accion !== 'guardar_cero';
+
                 // Si se marcó crear el primer ejemplar físico
-                if (!empty($_POST['crear_ejemplar'])) {
+                if ($crearEjemplar) {
                     catalogo_guardar_ejemplar($pdo, [
                         'libro_id' => $nuevoId,
                         'estado' => 'disponible',
@@ -1200,9 +1208,15 @@ switch ($uriPath) {
                         'condicion' => $_POST['ejemplar_condicion'] ?? 'bueno',
                         'depositante_id' => $usuarioId,
                     ], $usuarioId);
+                    flash('Libro incorporado con éxito con 1 ejemplar físico en el catálogo.', 'exito');
+                } else {
+                    flash('Libro incorporado con éxito al catálogo con 0 ejemplares.', 'exito');
                 }
 
-                flash('Libro incorporado con éxito al catálogo.', 'exito');
+                if ($accion === 'guardar_cero') {
+                    redireccionar('/libro/' . $nuevoId);
+                }
+
                 redireccionar('/libros/entrada?libro_id=' . $nuevoId);
             } catch (Exception $e) {
                 render_vista('admin/libros/nuevo', [

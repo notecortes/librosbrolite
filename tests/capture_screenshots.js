@@ -79,7 +79,7 @@ async function capture() {
     await page.goto(`${BASE_URL}/mostrador/entrega-directa`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'personal_entrega_directa.png') });
 
-    await page.goto(`${BASE_URL}/libros/entrada`, { waitUntil: 'networkidle2' });
+    await page.goto(`${BASE_URL}/libros/entrada?libro_id=1`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'personal_entrada.png') });
 
     await page.goto(`${BASE_URL}/ejemplar/1`, { waitUntil: 'networkidle2' });
@@ -92,6 +92,11 @@ async function capture() {
 
     await page.goto(`${BASE_URL}/admin`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'admin_dashboard.png') });
+
+    await page.goto(`${BASE_URL}/admin/libros/nuevo`, { waitUntil: 'networkidle2' });
+    await page.setViewport({ width: 1280, height: 1260 });
+    await page.screenshot({ path: path.join(OUTPUT_DIR, 'admin_libros_nuevo.png') });
+    await page.setViewport({ width: 1280, height: 850 });
 
     await page.goto(`${BASE_URL}/admin/usuarios`, { waitUntil: 'networkidle2' });
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'admin_usuarios.png') });
@@ -117,7 +122,19 @@ async function capture() {
   }
 
   await browser.close();
-  console.log('¡Todas las capturas guardadas con éxito en public/assets/img/ayuda/!');
+
+  // Sincronizar directorio assets/img/ayuda
+  const ASSETS_DIR = path.join(__dirname, '../assets/img/ayuda');
+  if (!fs.existsSync(ASSETS_DIR)) {
+    fs.mkdirSync(ASSETS_DIR, { recursive: true });
+  }
+  for (const file of fs.readdirSync(OUTPUT_DIR)) {
+    if (file.endsWith('.png') && !file.includes('-safeBackup-')) {
+      fs.copyFileSync(path.join(OUTPUT_DIR, file), path.join(ASSETS_DIR, file));
+    }
+  }
+
+  console.log('¡Todas las capturas guardadas y sincronizadas con éxito!');
 }
 
 capture().catch(err => {

@@ -239,7 +239,7 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
           </div>
 
           <!-- Tarjeta 7: Gestión de Catálogo, Grupos, Idiomas y Bajas -->
-          <div class="col-lg-6 item-ayuda" data-keywords="catalogo libros alta editar baja eliminar reactivar grupos generos idiomas valenciano val cursos eso bachillerato">
+          <div class="col-lg-6 item-ayuda" data-keywords="catalogo libros alta editar baja eliminar reactivar grupos generos idiomas valenciano val cursos eso bachillerato sin ejemplares cero stock">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Gestión de Catálogo</span>
@@ -248,14 +248,14 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
               <div class="card-body px-4">
                 <h3 class="h5 fw-bold mb-2">Alta, Clasificación por Grupos, Idiomas y Ciclo de Vida</h3>
                 <p class="text-muted small mb-3">
-                  Control absoluto del fondo: alta con asistente ISBN o manual, botones rápidos de cursos escolares (<em>1.º ESO, 2.º ESO, Bachillerato...</em>), soporte para <strong>Valencià (val)</strong>, Catalán, Castellano e idiomas europeos, así como <strong>retirada («Dar de baja»)</strong> con reembolso automático de tokens por reservas canceladas y opción de <strong>eliminación total</strong>.
+                  Control absoluto del fondo: alta con asistente ISBN o manual, registro con <strong>0 ejemplares</strong> (para preparar el catálogo escolar antes de recibir stock físico) o con copia física inmediata, botones rápidos de cursos escolares (<em>1.º ESO, 2.º ESO, Bachillerato...</em>), soporte para <strong>Valencià (val)</strong>, Catalán, Castellano e idiomas europeos, así como <strong>retirada («Dar de baja»)</strong> con reembolso automático de tokens por reservas canceladas y opción de <strong>eliminación total</strong>.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>', 'Gestión de Catálogo y Ciclo de Vida')">
-                  <img src="/assets/img/ayuda/admin_csv.png?v=<?= $vAyuda ?>" alt="Gestión de Catálogo" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_libros_nuevo.png?v=<?= $vAyuda ?>', 'Gestión de Catálogo y Ciclo de Vida')">
+                  <img src="/assets/img/ayuda/admin_libros_nuevo.png?v=<?= $vAyuda ?>" alt="Gestión de Catálogo" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
-                  <span class="small text-muted"><i class="bi bi-tags text-success me-1"></i>Grupos, Val y Bajas</span>
+                  <span class="small text-muted"><i class="bi bi-tags text-success me-1"></i>Grupos, Val, 0 Ejemplares y Bajas</span>
                   <a href="/catalogo" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">Ver Catálogo <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -329,23 +329,23 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
           </div>
 
           <!-- Tarjeta 3: Entrada Unificada de Libros y Depósitos -->
-          <div class="col-lg-6 item-ayuda" data-keywords="entrada libros deposito donacion aportacion ejemplares lote acreditacion tokens lector admitidos">
+          <div class="col-lg-6 item-ayuda" data-keywords="entrada libros deposito donacion aportacion ejemplares lote acreditacion tokens lector admitidos sin ejemplares cero stock">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Entrada de Libros</span>
                 <span class="text-muted small"><i class="bi bi-journal-plus me-1"></i>/libros/entrada</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Entrada Unificada de Libros y Depósitos</h3>
+                <h3 class="h5 fw-bold mb-2">Entrada Unificada de Libros y Depósitos (con opción de 0 ejemplares)</h3>
                 <p class="text-muted small mb-3">
-                  Recepción ágil de libros admitidos en el catálogo: escanea el ISBN, indica el número de copias y el depositante. El sistema crea las copias físicas, acredita automáticamente los tokens ganados al lector y notifica a la lista de deseos.
+                  Recepción ágil de libros admitidos en el catálogo: escanea el ISBN, indica el número de copias y el depositante. Si deseas catalogar el título sin incorporar unidades físicas de inmediato, puedes indicar <strong>0 copias</strong> o pulsar <strong>«Guardar con 0 ejemplares»</strong>. Al incorporar copias físicas de un lector, se le acreditan los tokens correspondientes y se notifica a los alumnos con el libro en su lista de deseos.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrada.png?v=<?= $vAyuda ?>', 'Entrada Unificada de Libros')">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_entrada.png?v=<?= $vAyuda ?>', 'Entrada Unificada de Libros con opción de 0 ejemplares')">
                   <img src="/assets/img/ayuda/personal_entrada.png?v=<?= $vAyuda ?>" alt="Entrada de Libros" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
-                  <span class="small text-muted"><i class="bi bi-coin text-warning me-1"></i>Acredita tokens al instante</span>
+                  <span class="small text-muted"><i class="bi bi-coin text-warning me-1"></i>Acredita tokens o registra con 0 copias</span>
                   <a href="/libros/entrada" class="btn btn-warning text-dark btn-sm rounded-pill px-3 fw-bold">Registrar Entrada <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -377,23 +377,23 @@ $vAyuda = (string) (@filemtime(dirname(__DIR__, 2) . '/public/assets/img/ayuda/g
           </div>
 
           <!-- Tarjeta 5: Alta en Catálogo y Cursos Escolares -->
-          <div class="col-lg-6 item-ayuda" data-keywords="alta catalogo mostrador accion 4 nuevos libros cursos eso bachillerato grupos idiomas valenciano val">
+          <div class="col-lg-6 item-ayuda" data-keywords="alta catalogo mostrador accion 4 nuevos libros cursos eso bachillerato grupos idiomas valenciano val sin ejemplares cero copias">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-surface overflow-hidden">
               <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Alta In Situ</span>
                 <span class="text-muted small"><i class="bi bi-journal-plus me-1"></i>/admin/libros/nuevo</span>
               </div>
               <div class="card-body px-4">
-                <h3 class="h5 fw-bold mb-2">Alta Rápida en Catálogo y Asignación de Curso</h3>
+                <h3 class="h5 fw-bold mb-2">Alta Rápida en Catálogo y Cursos (con o sin ejemplares)</h3>
                 <p class="text-muted small mb-3">
-                  Accesible directamente desde la <strong>Acción 4 del Mostrador</strong> o la barra superior: registra nuevos títulos al vuelo con autocompletado ISBN, botones de 1 clic para cursos escolares prioritarios (<em>1.º ESO, 2.º ESO, etc.</em>), selector de idioma (incluyendo <strong>Valencià val</strong>) y creación opcional de su primera copia física.
+                  Accesible desde la <strong>Acción 4 del Mostrador</strong> o el menú superior: registra títulos nuevos con autocompletado ISBN, botones de 1 clic para cursos escolares prioritarios (<em>1.º ESO, 2.º ESO, Bachillerato...</em>) e idioma (incluyendo <strong>Valencià val</strong>). Permite guardar libros con <strong>0 ejemplares físicos</strong> (mediante el botón <strong>«Guardar con 0 ejemplares»</strong>) para preparar lecturas recomendadas con antelación, o activar el switch para registrar la primera copia física en estantería.
                 </p>
-                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>', 'Alta Rápida en Catálogo')">
-                  <img src="/assets/img/ayuda/personal_mostrador.png?v=<?= $vAyuda ?>" alt="Alta Rápida en Catálogo" class="img-fluid rounded-3 shadow-xs">
+                <div class="marco-captura mb-3" onclick="abrirModalCaptura('/assets/img/ayuda/admin_libros_nuevo.png?v=<?= $vAyuda ?>', 'Alta Rápida en Catálogo con o sin ejemplares')">
+                  <img src="/assets/img/ayuda/admin_libros_nuevo.png?v=<?= $vAyuda ?>" alt="Alta Rápida en Catálogo" class="img-fluid rounded-3 shadow-xs">
                   <div class="overlay-zoom"><i class="bi bi-zoom-in me-1"></i>Clic para ampliar</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2">
-                  <span class="small text-muted"><i class="bi bi-plus-circle text-warning me-1"></i>Mostrador Acción 4</span>
+                  <span class="small text-muted"><i class="bi bi-journal-check text-success me-1"></i>0 copias o 1.er ejemplar físico</span>
                   <a href="/admin/libros/nuevo" class="btn btn-warning text-dark btn-sm rounded-pill px-3 fw-bold">Nuevo Libro <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
               </div>

@@ -968,7 +968,7 @@ function libro_entrada_copias(
     string|int|null $depositanteId = null,
     int $operadorId = 0
 ): array {
-    $copias = max(1, min(20, $copias));
+    $copias = max(0, min(20, $copias));
     $condicionesValidas = ['nuevo', 'como_nuevo', 'bueno', 'aceptable', 'deteriorado'];
     $condicionLimpia = in_array($condicion, $condicionesValidas, true) ? $condicion : 'bueno';
     $ubicacionLimpia = trim($ubicacion) !== '' ? trim($ubicacion) : 'MOSTRADOR';
@@ -986,6 +986,29 @@ function libro_entrada_copias(
         $libro = $stmtLib->fetch();
         if (!$libro) {
             throw new Exception('El libro indicado no existe en el catálogo.');
+        }
+
+        // Si se solicitó 0 copias: no se crean ejemplares físicos ni transacciones de depósito
+        if ($copias === 0) {
+            if ($iniciaTx) {
+                $pdo->commit();
+            }
+            if (function_exists('auditoria_registrar')) {
+                auditoria_registrar($pdo, 'libro.entrada_0_copias', 'libros', $libroId, [
+                    'libro_id' => $libroId,
+                    'titulo' => $libro['titulo'],
+                    'copias' => 0,
+                    'personal_id' => $operadorId,
+                ]);
+            }
+            return [
+                'copias_creadas' => 0,
+                'ejemplares_ids' => [],
+                'transacciones_ids' => [],
+                'depositante_id' => null,
+                'depositante' => null,
+                'tokens_acreditados' => 0,
+            ];
         }
 
         // Validar depositante si viene indicado (por ID numérico o email)

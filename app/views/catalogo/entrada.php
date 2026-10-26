@@ -193,12 +193,12 @@ $librosRecientes = $librosRecientes ?? [];
                          id="input-copias"
                          class="form-control font-monospace fs-5 fw-bold"
                          value="1"
-                         min="1"
+                         min="0"
                          max="20"
                          required
                          autofocus>
                 </div>
-                <div class="form-text small">Rango admitido: de 1 a 20 ejemplares en una sola operación.</div>
+                <div class="form-text small">Rango admitido: de 0 a 20 ejemplares. (Indica <strong>0</strong> si deseas registrar el libro en el catálogo sin stock físico por ahora).</div>
               </div>
 
               <!-- Condición física -->
@@ -265,17 +265,24 @@ $librosRecientes = $librosRecientes ?? [];
                 </span>
               </div>
               <div class="small text-secondary mb-0">
-                Al confirmar, se crearán las copias en el almacén físico y se registrará la transacción en el libro mayor y en la auditoría inmutable del centro.
+                Al confirmar, se crearán las copias en el almacén físico y se registrará la transacción en el libro mayor y en la auditoría inmutable del centro. Si se indican 0 copias, el libro se registra en el catálogo sin stock físico.
               </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4">
-              <a href="/libros/entrada" class="btn btn-outline-secondary rounded-pill px-4">
-                Cancelar
-              </a>
-              <button type="submit" class="btn btn-success btn-lg fw-bold rounded-pill px-5 shadow-sm" id="btn-submit-entrada">
-                <i class="bi bi-box-arrow-in-down me-2"></i>Confirmar Entrada de Copias
-              </button>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+              <div>
+                <button type="submit" name="copias" value="0" class="btn btn-outline-secondary rounded-pill px-3" id="btn-guardar-cero" title="Registrar el libro en catálogo sin stock físico">
+                  <i class="bi bi-journal-check me-1"></i>Guardar con 0 ejemplares
+                </button>
+              </div>
+              <div class="d-flex gap-2">
+                <a href="/libros/entrada" class="btn btn-outline-secondary rounded-pill px-4">
+                  Cancelar
+                </a>
+                <button type="submit" class="btn btn-success btn-lg fw-bold rounded-pill px-4 shadow-sm" id="btn-submit-entrada">
+                  <i class="bi bi-box-arrow-in-down me-2"></i>Confirmar Entrada de Copias
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -347,3 +354,26 @@ $librosRecientes = $librosRecientes ?? [];
     <?php endif; ?>
   <?php endif; ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var inputCopias = document.getElementById('input-copias');
+  var btnSubmit = document.getElementById('btn-submit-entrada');
+  if (inputCopias && btnSubmit) {
+    var checkCero = function () {
+      var val = parseInt(inputCopias.value, 10);
+      if (val === 0) {
+        btnSubmit.innerHTML = '<i class="bi bi-journal-check me-2"></i>Confirmar (0 copias)';
+        btnSubmit.classList.remove('btn-success');
+        btnSubmit.classList.add('btn-secondary');
+      } else {
+        btnSubmit.innerHTML = '<i class="bi bi-box-arrow-in-down me-2"></i>Confirmar Entrada de Copias';
+        btnSubmit.classList.remove('btn-secondary');
+        btnSubmit.classList.add('btn-success');
+      }
+    };
+    inputCopias.addEventListener('input', checkCero);
+    inputCopias.addEventListener('change', checkCero);
+  }
+});
+</script>

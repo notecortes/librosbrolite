@@ -206,15 +206,18 @@ if (empty($libroPrevio['isbn13']) && !empty($_GET['isbn'])) {
 
             <!-- Checkbox y campos para crear primer ejemplar físico -->
             <div class="col-12">
-              <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" role="switch" id="check-ejemplar" name="crear_ejemplar" value="1" checked>
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" role="switch" id="check-ejemplar" name="crear_ejemplar" value="1" <?= !empty($libroPrevio['crear_ejemplar']) ? 'checked' : '' ?>>
                 <label class="form-check-label fw-bold" for="check-ejemplar">
-                  Registrar de inmediato el 1er ejemplar físico en estantería
+                  Registrar de inmediato el 1.er ejemplar físico en estantería
                 </label>
+              </div>
+              <div class="form-text small text-muted" id="ayuda-check-ejemplar">
+                Desmarca esta casilla si deseas guardar el libro en el catálogo con <strong>0 ejemplares</strong> (sin copias físicas por ahora).
               </div>
             </div>
 
-            <div id="seccion-primer-ejemplar" class="row g-3 col-12 ps-3 pt-0">
+            <div id="seccion-primer-ejemplar" class="row g-3 col-12 ps-3 pt-0" style="<?= !empty($libroPrevio['crear_ejemplar']) ? '' : 'display: none;' ?>">
               <div class="col-12 col-sm-6">
                 <label for="campo-ej-ubicacion" class="form-label small fw-semibold">Ubicación física en estantería</label>
                 <input type="text" id="campo-ej-ubicacion" name="ejemplar_ubicacion" class="form-control font-monospace"
@@ -232,11 +235,16 @@ if (empty($libroPrevio['isbn13']) && !empty($_GET['isbn'])) {
             </div>
 
             <!-- Botones de Guardar -->
-            <div class="col-12 d-flex justify-content-end gap-2 pt-3 border-top mt-4">
-              <a href="/admin/libros" class="btn btn-secondary">Cancelar</a>
-              <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm">
-                <i class="bi bi-check-lg me-1"></i>Guardar en el Catálogo
+            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top mt-4">
+              <button type="submit" name="accion" value="guardar_cero" class="btn btn-outline-secondary fw-semibold" id="btn-guardar-cero-nuevo">
+                <i class="bi bi-journal-check me-1"></i>Guardar con 0 ejemplares
               </button>
+              <div class="d-flex gap-2">
+                <a href="/admin/libros" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm" id="btn-submit-libro">
+                  <i class="bi bi-check-lg me-1"></i>Guardar en el Catálogo
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -278,6 +286,16 @@ document.addEventListener('DOMContentLoaded', function () {
   if (checkEjemplar && seccionEjemplar) {
     checkEjemplar.addEventListener('change', function () {
       seccionEjemplar.style.display = this.checked ? 'flex' : 'none';
+    });
+  }
+
+  var btnGuardarCero = document.getElementById('btn-guardar-cero-nuevo');
+  if (btnGuardarCero && checkEjemplar) {
+    btnGuardarCero.addEventListener('click', function () {
+      checkEjemplar.checked = false;
+      if (seccionEjemplar) {
+        seccionEjemplar.style.display = 'none';
+      }
     });
   }
 

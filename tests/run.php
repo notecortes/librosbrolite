@@ -2607,6 +2607,42 @@ it('T-CTX-04: Redirección tras alta de libro nuevo: aterriza en /libros/entrada
     $rEntrada = http_get('/libros/entrada?libro_id=' . $nuevoId, $sPers);
     assert_http_code(200, $rEntrada, 'Página de entrada de copias responde 200');
     assert_contains($rEntrada['body'], $tituloNuevo, 'Página de entrada muestra el libro recién creado');
+    assert_contains($rEntrada['body'], 'min="0"', 'Campo copias permite valor 0');
+});
+
+it('T-CTX-04B: Alta y entrada con 0 ejemplares: permite registrar libros en catálogo sin stock físico inicial', function () {
+    $sPers = login_como('personal');
+    http_get('/admin/libros/nuevo', $sPers);
+
+    // 1. Entrada de 0 copias en /libros/entrada
+    $tituloCero = 'Libro Sin Stock ' . uniqid();
+    $isbnCero = '978' . str_pad((string) random_int(1000000000, 9999999999), 10, '0', STR_PAD_LEFT);
+    $rAlta = http_post('/admin/libros/nuevo', [
+        'titulo' => $tituloCero,
+        'autor'  => 'Autor Sin Copias',
+        'isbn13' => $isbnCero,
+        'accion' => 'guardar_cero',
+    ], $sPers);
+
+    assert_equals(302, $rAlta['code'], 'Alta con accion guardar_cero responde 302');
+    $libroCeroId = (int) db_val("SELECT id FROM libros WHERE isbn13 = ?", [$isbnCero]);
+    assert_true($libroCeroId > 0, 'Libro creado en base de datos');
+    assert_contains($rAlta['headers'], '/libro/' . $libroCeroId, 'Redirección directa a la ficha del libro');
+
+    $copiasEnBd = (int) db_val("SELECT COUNT(*) FROM ejemplares WHERE libro_id = ?", [$libroCeroId]);
+    assert_equals(0, $copiasEnBd, 'El libro tiene 0 ejemplares físicos');
+
+    // 2. Procesar POST /libros/entrada con copias = 0
+    http_get('/libros/entrada?libro_id=' . $libroCeroId, $sPers);
+    $rEntradaCero = http_post('/libros/entrada', [
+        'libro_id' => $libroCeroId,
+        'copias'   => 0,
+    ], $sPers);
+    assert_equals(302, $rEntradaCero['code'], 'POST /libros/entrada con 0 copias responde 302');
+    assert_contains($rEntradaCero['headers'], '/libro/' . $libroCeroId, 'Redirige a la ficha del libro');
+
+    $copiasDespues = (int) db_val("SELECT COUNT(*) FROM ejemplares WHERE libro_id = ?", [$libroCeroId]);
+    assert_equals(0, $copiasDespues, 'El libro sigue teniendo 0 ejemplares tras procesar entrada con 0 copias');
 });
 
 it('T-CTX-05: Trazabilidad por copia: /ejemplar/{id} responde 200 con timeline para personal; 403 para usuario', function () {
