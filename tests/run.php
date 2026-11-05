@@ -303,7 +303,10 @@ it('T-AUTH-04: Contraseñas con password_hash; nada en texto plano', function ()
 it('T-GOOG-01: Sin client_id: botón ausente y /auth/google no redirige a Google', function () {
     db_exec("UPDATE configuracion SET valor = '' WHERE clave = 'google_client_id'");
     $rLogin = http_get('/login');
-    assert_not_contains($rLogin['body'], 'Continuar con Google', 'Botón Google oculto');
+    assert_not_contains($rLogin['body'], 'Continuar con Google', 'Botón Google oculto en login');
+
+    $rRegistro = http_get('/registro');
+    assert_not_contains($rRegistro['body'], 'Registrarse con Google', 'Botón Google oculto en registro');
 
     $rAuth = http_get('/auth/google');
     assert_true($rAuth['code'] === 302, 'Redirige localmente');
@@ -312,6 +315,11 @@ it('T-GOOG-01: Sin client_id: botón ausente y /auth/google no redirige a Google
 
 it('T-GOOG-02: Con config: /auth/google → 302 a accounts.google.com con state', function () {
     db_exec("UPDATE configuracion SET valor = 'test_google_client_id_demo' WHERE clave = 'google_client_id'");
+
+    $rRegistro = http_get('/registro');
+    assert_contains($rRegistro['body'], 'Registrarse con Google', 'Botón Google visible en registro');
+    assert_contains($rRegistro['body'], '/auth/google', 'Enlace /auth/google presente en registro');
+
     $s = new_session();
     $ch = curl_init(BASE_URL . '/auth/google');
     curl_setopt_array($ch, [

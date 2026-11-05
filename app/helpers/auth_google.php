@@ -85,6 +85,10 @@ function auth_google_procesar(string $sub, string $email, string $nombre, ?strin
         'email' => $emailNormalizado,
     ]);
 
+    if (function_exists('usuarios_persistir_personalizados')) {
+        usuarios_persistir_personalizados($pdo);
+    }
+
     $stmtNuevo = $pdo->prepare('
         SELECT u.*, r.nombre AS rol_nombre
         FROM usuarios u
@@ -93,7 +97,11 @@ function auth_google_procesar(string $sub, string $email, string $nombre, ?strin
         LIMIT 1
     ');
     $stmtNuevo->execute([$nuevoId]);
-    return $stmtNuevo->fetch();
+    $resNuevo = $stmtNuevo->fetch();
+    if ($resNuevo) {
+        $resNuevo['_es_nuevo'] = true;
+    }
+    return $resNuevo;
 }
 
 /**
@@ -108,6 +116,13 @@ function google_generar_url_auth(array $config): ?string {
 
     if ($clientId === '') {
         return null;
+    }
+
+    if ($redirectUri === '') {
+        $esHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+        $esquema = $esHttps ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8088';
+        $redirectUri = $esquema . '://' . $host . '/auth/google/callback';
     }
 
     if (session_status() === PHP_SESSION_NONE) {

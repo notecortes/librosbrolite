@@ -193,12 +193,15 @@ switch ($uriPath) {
                     'error' => $res['error'] ?? 'Error al registrar el usuario.',
                     'nombre' => $nombre,
                     'email' => $email,
+                    'config' => $config,
                 ], 'Crear cuenta');
                 exit;
             }
         }
 
-        render_vista('auth/registro', [], 'Crear cuenta');
+        render_vista('auth/registro', [
+            'config' => $config,
+        ], 'Crear cuenta');
         break;
 
     case '/olvidar':
@@ -278,8 +281,9 @@ switch ($uriPath) {
         // Degradación elegante si google_client_id está vacío (§6.1, T-GOOG-01)
         $clientId = trim((string) ($config['google_client_id'] ?? ''));
         if ($clientId === '') {
-            flash('El inicio de sesión con Google no está habilitado.', 'aviso');
-            redireccionar('/login');
+            flash('El registro e inicio de sesión con Google no está habilitado.', 'aviso');
+            $origen = (!empty($_SERVER['HTTP_REFERER']) && str_contains($_SERVER['HTTP_REFERER'], '/registro')) ? '/registro' : '/login';
+            redireccionar($origen);
         }
 
         // Redirigir a Google con state generado (T-GOOG-02)

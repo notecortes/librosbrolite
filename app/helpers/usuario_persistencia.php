@@ -38,6 +38,7 @@ function usuarios_persistir_personalizados(?PDO $pdo = null): int {
         $sql = "
             SELECT u.id, u.nombre, u.email, u.password_hash, u.rol_id, u.activo,
                    u.auth_provider, u.email_verificado, u.fecha_registro,
+                   u.google_sub, u.foto_url,
                    (SELECT COALESCE(SUM(cantidad), 0) FROM movimientos_tokens WHERE usuario_id = u.id) AS tokens_saldo
             FROM usuarios u
             WHERE u.email NOT IN (
@@ -130,8 +131,8 @@ function usuarios_restaurar_personalizados(?PDO $pdo = null): int {
 
         $stmtExiste = $db->prepare('SELECT id FROM usuarios WHERE email = ? LIMIT 1');
         $stmtInsert = $db->prepare('
-            INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, auth_provider, email_verificado, fecha_registro)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, auth_provider, email_verificado, fecha_registro, google_sub, foto_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmtToken = $db->prepare('
             INSERT INTO movimientos_tokens (usuario_id, cantidad, tipo, concepto, saldo_resultante, fecha)
@@ -166,6 +167,8 @@ function usuarios_restaurar_personalizados(?PDO $pdo = null): int {
                     $u['auth_provider'] ?? 'local',
                     (int) ($u['email_verificado'] ?? 1),
                     $u['fecha_registro'] ?? date('Y-m-d H:i:s'),
+                    $u['google_sub'] ?? null,
+                    $u['foto_url'] ?? null,
                 ]);
                 $userId = (int) $db->lastInsertId();
                 $restaurados++;
